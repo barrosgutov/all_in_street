@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All In Street · Trading Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0B0B0D;
+  --bg-card: #14141A;
+  --bg-card-elev: #1C1C24;
+  --bg-card-hover: #1E1E26;
+  --ink: #ECEAE3;
+  --ink-soft: #B4B0A6;
+  --ink-muted: #7A7872;
+  --ink-dim: #4A4845;
+  --felt-green-dark: #0A2E20;
+  --felt-green: #1E6F46;
+  --felt-green-bright: #2D9968;
+  --gold: #D4B062;
+  --gold-bright: #F0CC7E;
+  --gold-soft: #8B7943;
+  --copper: #C56939;
+  --copper-bright: #E27E50;
+  --copper-soft: #7A3520;
+  --border: #2A2A30;
+  --border-bright: #3D3D44;
+  --border-gold: rgba(212,176,98,0.3);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter Tight', sans-serif; min-height: 100vh; font-size: 14px; line-height: 1.45; }
+::selection { background: var(--gold); color: var(--bg); }
+html { scroll-behavior: smooth; }
+
+.grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.04; z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.6'/></svg>");
+  mix-blend-mode: overlay;
+}
+.container { max-width: 1440px; margin: 0 auto; padding: 0 32px; }
+
+/* ─── HEADER ─── */
+.header { position: relative; border-bottom: 1px solid var(--border); }
+.header-inner { padding: 32px 0 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; position: relative; z-index: 1; }
+.header-left { flex: 1; }
+.header-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.header-bar { width: 4px; height: 32px; background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%); }
+.header-issue { font-size: 11px; text-transform: uppercase; letter-spacing: 0.28em; color: var(--ink-muted); font-weight: 500; }
+
+.header-title { 
+  font-family: 'Fraunces', serif; font-weight: 300; font-size: 64px; 
+  line-height: 0.95; letter-spacing: -0.025em; margin-bottom: 10px;
+  font-variation-settings: '"opsz" 144';
+}
+.header-title em { font-style: italic; color: var(--gold); font-weight: 400; }
+.header-subtitle { font-size: 14px; color: var(--ink-soft); max-width: 480px; line-height: 1.6; }
+
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+.header-update-btn {
+  background: var(--gold); color: var(--bg); border: none;
+  padding: 12px 20px; font-family: 'Inter Tight', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+  cursor: pointer; display: flex; align-items: center; gap: 10px;
+  transition: all 0.2s;
+}
+.header-update-btn:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.header-update-btn svg { width: 14px; height: 14px; }
+.header-update-btn.spinning svg { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.header-update-info { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.header-update-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-muted); }
+.header-update-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink); font-weight: 500; }
+
+.live-indicator { display: flex; align-items: center; gap: 8px; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 10px #4ADE80; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.live-text { font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-muted); }
+
+/* ─── TICKER ─── */
+.ticker { 
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+  overflow: hidden; position: relative;
+}
+.ticker-track { 
+  display: flex; align-items: center; gap: 28px; padding: 14px 0;
+  white-space: nowrap; animation: ticker 60s linear infinite; width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+.ticker-item { 
+  display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0;
+  padding: 0 18px; border-right: 1px solid var(--border);
+}
+.ticker-item:last-child { border-right: none; }
+.ticker-rank {
+  font-family: 'Fraunces', serif; font-weight: 700;
+  min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; border-radius: 2px;
+}
+/* #1 ouro maciço, decrescendo o destaque */
+.ticker-rank.r1 { background: var(--gold-bright); color: var(--bg); font-size: 22px; box-shadow: 0 0 16px rgba(240,204,126,0.4); }
+.ticker-rank.r2 { background: var(--gold); color: var(--bg); font-size: 20px; }
+.ticker-rank.r3 { background: rgba(212,176,98,0.7); color: var(--bg); }
+.ticker-rank.r4 { background: rgba(212,176,98,0.4); color: var(--ink); }
+.ticker-rank.r5 { background: rgba(212,176,98,0.2); color: var(--ink-soft); border: 1px solid var(--border-gold); }
+.ticker-jogo { 
+  font-family: 'Fraunces', serif; font-weight: 600; font-size: 16px;
+  color: var(--ink);
+}
+.ticker-mercado {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  padding: 3px 8px; font-weight: 600;
+}
+.ticker-mercado.OVER_HT { background: rgba(74,222,128,0.15); color: #4ADE80; }
+.ticker-mercado.OVER_FT { background: rgba(79,209,197,0.15); color: #4FD1C5; }
+.ticker-mercado.UNDER_HT { background: rgba(240,204,126,0.15); color: var(--gold-bright); }
+.ticker-mercado.UNDER_FT { background: rgba(226,126,80,0.15); color: var(--copper-bright); }
+.ticker-mercado.UNDER_25_FT { background: rgba(147,181,225,0.15); color: #93B5E1; }
+.ticker-value {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+}
+.ticker-value-lg {
+  font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700;
+}
+.ticker-extra {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-muted);
+}
+.tk-green { color: #4ADE80; }
+.tk-gold { color: var(--gold); }
+.tk-copper { color: var(--copper-bright); }
+
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ─── TABS ─── */
+.tabs-bar {
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  position: sticky; top: 0; z-index: 40;
+}
+.tabs-inner { display: flex; align-items: center; padding: 0; }
+.tab {
+  padding: 16px 28px; font-family: 'Fraunces', serif;
+  font-size: 17px; font-weight: 500; color: var(--ink-muted);
+  background: none; border: none; cursor: pointer; position: relative;
+  transition: all 0.2s; letter-spacing: 0.01em;
+}
+.tab:hover { color: var(--ink-soft); }
+.tab.active { color: var(--gold); }
+.tab.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 28px; right: 28px;
+  height: 2px; background: var(--gold);
+}
+.tab-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  margin-left: 8px; color: var(--ink-muted);
+  background: rgba(255,255,255,0.05); padding: 2px 7px;
+  vertical-align: middle; font-weight: 600;
+}
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ─── FILTROS ─── */
+.filters {
+  padding: 20px 0 22px; border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.filters-grid {
+  display: grid; grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 16px; align-items: center; margin-bottom: 14px;
+}
+.filters-row {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px;
+}
+.filters-row:last-child { margin-bottom: 0; }
+
+.search-box {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border: 1px solid var(--border); background: var(--bg-card);
+  transition: border-color 0.2s;
+}
+.search-box:focus-within { border-color: var(--gold); }
+.search-box svg { width: 16px; height: 16px; color: var(--ink-muted); flex-shrink: 0; }
+.search-input { 
+  background: transparent; border: none; color: var(--ink);
+  font-family: 'Inter Tight', sans-serif; font-size: 14px; flex: 1; outline: none;
+}
+.search-input::placeholder { color: var(--ink-dim); }
+
+.toggles-block { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toggle {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 8px 12px; border: 1px solid var(--border); transition: all 0.2s;
+}
+.toggle:hover { border-color: var(--ink-muted); }
+.toggle input { width: 14px; height: 14px; accent-color: var(--gold); cursor: pointer; }
+.toggle span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-soft); font-weight: 500; }
+
+.pill {
+  padding: 8px 14px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.15em; font-weight: 600; background: transparent;
+  border: 1px solid var(--border); color: var(--ink-muted); cursor: pointer;
+  font-family: 'Inter Tight', sans-serif;
+  display: inline-flex; align-items: center; gap: 8px;
+  white-space: nowrap; transition: all 0.2s;
+}
+.pill:hover { border-color: var(--gold-soft); color: var(--gold-bright); }
+.pill.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+.pill-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  opacity: 0.7; font-weight: 500;
+}
+
+.range-block { display: flex; align-items: center; gap: 12px; min-width: 240px; }
+.range-label-block { 
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-muted); font-weight: 600; min-width: 70px;
+}
+.range-input { 
+  flex: 1; min-width: 100px; max-width: 180px;
+  -webkit-appearance: none; appearance: none; background: transparent;
+}
+.range-input::-webkit-slider-runnable-track { height: 3px; background: var(--border); }
+.range-input::-webkit-slider-thumb { 
+  -webkit-appearance: none; appearance: none;
+  height: 14px; width: 14px; background: var(--gold);
+  margin-top: -5px; cursor: pointer; border-radius: 0;
+}
+.range-value { 
+  font-family: 'JetBrains Mono', monospace; color: var(--gold);
+  font-size: 14px; font-weight: 600; min-width: 32px; text-align: right;
+}
+
+.count-display { margin-left: auto; font-size: 13px; color: var(--ink-soft); }
+.count-display strong { color: var(--gold); font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 16px; }
+
+.select-pill {
+  padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--ink); font-family: 'Inter Tight', sans-serif;
+  font-size: 12px; letter-spacing: 0.06em; cursor: pointer; outline: none;
+}
+.select-pill:hover { border-color: var(--ink-muted); }
+
+/* ordem block — repensado */
+.order-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.order-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); font-weight: 600; min-width: 70px; }
+.order-btn {
+  font-family: 'Inter Tight', sans-serif; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.15em; font-weight: 600; background: transparent;
+  border: 1px solid var(--border); color: var(--ink-muted);
+  padding: 7px 12px; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.order-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
+.order-btn.active { color: var(--gold); border-color: var(--gold); background: rgba(212,176,98,0.05); }
+
+/* ─── COMBOS SUMÁRIO ─── */
+.summary-section { padding: 32px 0; border-bottom: 1px solid var(--border); }
+.summary-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; }
+@media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
+
+.section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.section-head-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.section-head-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.25em;
+  font-weight: 700; color: var(--ink);
+}
+.section-head-line { flex: 1; height: 1px; background: var(--border); }
+
+.combos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .combos-grid { grid-template-columns: 1fr; } }
+
+.combo-card {
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(212,176,98,0.06) 0%, rgba(212,176,98,0.02) 100%);
+  border: 1px solid var(--border-gold); border-left: 3px solid var(--gold);
+  position: relative;
+}
+.combo-card.lixo {
+  background: linear-gradient(135deg, rgba(197,105,57,0.06) 0%, rgba(197,105,57,0.02) 100%);
+  border: 1px solid rgba(197,105,57,0.3); border-left: 3px solid var(--copper);
+}
+.combo-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
+.combo-mercado {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 16px; color: var(--gold);
+}
+.combo-card.lixo .combo-mercado { color: var(--copper-bright); }
+.combo-detail {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--ink-soft); margin-bottom: 12px;
+}
+.combo-stats { display: flex; align-items: baseline; gap: 18px; }
+.combo-stat { display: flex; flex-direction: column; gap: 2px; }
+.combo-stat-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em;
+  color: var(--ink-muted); font-weight: 600;
+}
+.combo-stat-value { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; }
+
+/* ─── TAG ─── */
+.tag {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.12em; border-radius: 2px;
+  font-family: 'Inter Tight', sans-serif; font-weight: 600;
+}
+.tag.tag-dim { color: var(--ink-soft); border: 1px solid var(--border); background: var(--bg-card); }
+.tag.tag-dim.mono { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.tag.tag-gold { color: var(--gold); background: rgba(212,176,98,0.1); border: 1px solid var(--border-gold); }
+.tag.tag-green { color: #4ADE80; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.3); font-family: 'JetBrains Mono', monospace; }
+.tag.tag-copper { color: var(--copper-bright); background: rgba(197,105,57,0.08); border: 1px solid rgba(197,105,57,0.3); font-family: 'JetBrains Mono', monospace; }
+
+/* ─── CARDS COMPACTOS (V3) ─── */
+.matches-section { padding: 24px 0 64px; }
+.matches-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .matches-grid { grid-template-columns: 1fr; } }
+
+.match-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  position: relative; cursor: pointer; transition: all 0.25s; overflow: hidden;
+}
+.match-card:hover { 
+  transform: translateY(-2px); background: var(--bg-card-hover);
+  border-color: var(--border-bright); box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.match-card.tier-gold { border-top: 2px solid var(--gold); }
+.match-card.tier-silver { border-top: 2px solid #8C8C92; }
+.match-card.tier-bronze { border-top: 2px solid var(--copper); }
+.match-card.tier-none { border-top: 1px solid var(--border); }
+
+.tier-badge {
+  position: absolute; top: 0; right: 0;
+  padding: 3px 10px; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 0.22em;
+  font-weight: 700; z-index: 2;
+}
+.tier-badge.gold { background: var(--gold); color: var(--bg); }
+.tier-badge.silver { background: #8C8C92; color: var(--bg); }
+.tier-badge.bronze { background: var(--copper); color: white; }
+.tier-badge.none { display: none; }
+
+.match-header {
+  padding: 16px 18px 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  position: relative; z-index: 1;
+}
+.match-info { flex: 1; min-width: 0; }
+.match-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.match-meta-liga { font-size: 11px; color: var(--ink-muted); font-family: 'JetBrains Mono', monospace; }
+
+.match-title {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px;
+  line-height: 1.2; color: var(--ink); letter-spacing: -0.01em;
+}
+
+.recom-badge {
+  padding: 10px 14px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; min-width: 92px; position: relative;
+}
+/* Cada mercado com cor PRÓPRIA pra bater o olho e saber qual é */
+.recom-badge.OVER_HT { 
+  background: linear-gradient(135deg, rgba(45,153,104,0.18) 0%, rgba(30,111,70,0.08) 100%);
+  border: 1px solid rgba(45,153,104,0.5); color: #4ADE80; 
+}
+.recom-badge.OVER_FT { 
+  background: linear-gradient(135deg, rgba(56,178,172,0.18) 0%, rgba(45,140,135,0.08) 100%);
+  border: 1px solid rgba(56,178,172,0.5); color: #4FD1C5;  /* teal — distinto do Over HT */
+}
+.recom-badge.UNDER_HT {
+  background: linear-gradient(135deg, rgba(212,176,98,0.16) 0%, rgba(212,176,98,0.05) 100%);
+  border: 1px solid var(--border-gold); color: var(--gold-bright);  /* ouro */
+}
+.recom-badge.UNDER_FT {
+  background: linear-gradient(135deg, rgba(197,105,57,0.18) 0%, rgba(197,105,57,0.06) 100%);
+  border: 1px solid rgba(197,105,57,0.5); color: var(--copper-bright);  /* cobre */
+}
+.recom-badge.UNDER_25_FT {
+  background: linear-gradient(135deg, rgba(127,156,201,0.16) 0%, rgba(90,120,170,0.06) 100%);
+  border: 1px solid rgba(127,156,201,0.5); color: #93B5E1;  /* azul aço */
+}
+.recom-badge.EVITAR, .recom-badge.MONITORAR {
+  background: linear-gradient(135deg, rgba(122,120,114,0.12) 0%, rgba(74,72,69,0.05) 100%);
+  border: 1px solid rgba(122,120,114,0.4); color: var(--ink-muted);
+}
+.recom-glyph { font-family: 'Fraunces', serif; font-weight: 300; font-size: 22px; line-height: 1; margin-bottom: 4px; }
+.recom-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; margin-bottom: 4px; }
+.recom-score { font-family: 'Fraunces', serif; font-weight: 600; font-size: 28px; line-height: 1; font-variation-settings: '"opsz" 144'; }
+
+/* Modelo × Mercado bar */
+.mvm-section {
+  margin: 0 18px; padding: 10px 12px;
+  background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; position: relative; z-index: 1;
+}
+.mvm-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-muted); font-weight: 600; min-width: 50px; }
+.mvm-bar-container { flex: 1; height: 6px; background: var(--bg); position: relative; }
+.mvm-bar { height: 100%; position: absolute; top: 0; background: var(--gold); }
+.mvm-bar.modelo { background: var(--gold); left: 0; }
+.mvm-bar.mercado { background: var(--ink-muted); left: 0; opacity: 0.5; }
+.mvm-stats { display: flex; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.mvm-stat { display: flex; gap: 4px; align-items: baseline; }
+.mvm-stat-label { color: var(--ink-muted); font-size: 10px; }
+.mvm-stat-value { color: var(--ink); font-weight: 600; }
+.mvm-stat-value.gold { color: var(--gold); }
+.mvm-stat-value.green { color: #4ADE80; }
+.mvm-stat-value.copper { color: var(--copper-bright); }
+
+/* Scores grid */
+.divider-section {
+  padding: 10px 18px 6px; display: flex; align-items: center; gap: 10px;
+  position: relative; z-index: 1;
+}
+.divider-line { flex: 1; height: 1px; background: var(--border); }
+.divider-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
+  color: var(--ink-dim); font-weight: 600;
+}
+
+.scores-grid {
+  padding: 8px 18px 14px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  position: relative; z-index: 1;
+}
+.score-item { display: flex; flex-direction: column; gap: 5px; }
+.score-item-head { display: flex; justify-content: space-between; align-items: baseline; }
+.score-item-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-muted); font-weight: 600;
+}
+.score-item-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--ink); }
+.score-bar { height: 3px; background: rgba(255,255,255,0.04); overflow: hidden; }
+.score-bar-fill { height: 100%; transition: width 0.7s; }
+.score-bar-fill.over { background: var(--felt-green-bright); }
+.score-bar-fill.under { background: var(--gold); }
+.score-bar-fill.u25 { background: var(--copper); }
+
+/* Dados pré */
+.pre-data {
+  padding: 12px 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  border-top: 1px solid var(--border); background: rgba(0,0,0,0.25);
+  position: relative; z-index: 1;
+}
+.pre-item { display: flex; flex-direction: column; gap: 3px; }
+.pre-item-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-muted); font-weight: 600;
+}
+.pre-item-value {
+  font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; color: var(--ink);
+}
+.pre-item-value.gold { color: var(--gold); }
+.pre-item-value.green { color: #4ADE80; }
+.pre-item-value.copper { color: var(--copper-bright); }
+.pre-item-value .sub { font-size: 11px; margin-left: 4px; color: var(--ink-muted); font-weight: 400; }
+
+/* Footer card — 2 linhas pra colocar ultimas + h2h */
+.match-footer {
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+  position: relative; z-index: 1;
+}
+.footer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ultimas-block { display: flex; align-items: center; gap: 10px; }
+.ultimas-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-muted); font-weight: 600; min-width: 50px;
+}
+.ultimas-row { display: flex; gap: 3px; }
+.ultima-cell {
+  width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+}
+.ultima-cell.win { background: rgba(45,153,104,0.25); color: #4ADE80; }
+.ultima-cell.loss { background: rgba(197,105,57,0.25); color: var(--copper-bright); }
+.ultima-cell.draw { background: rgba(212,176,98,0.2); color: var(--gold); }
+.ultima-cell.dash { background: rgba(255,255,255,0.04); color: var(--ink-dim); }
+
+.ev-final { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.ev-final.green { color: #4ADE80; }
+.ev-final.copper { color: var(--copper-bright); }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88); backdrop-filter: blur(4px);
+  z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 32px; overflow-y: auto;
+}
+.modal {
+  background: var(--bg-card-elev); border: 1px solid var(--border-bright);
+  max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative;
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; color: var(--ink); cursor: pointer; padding: 8px; z-index: 2;
+}
+.modal-content { padding: 32px; position: relative; z-index: 1; }
+.modal-title { font-family: 'Fraunces', serif; font-weight: 400; font-size: 32px; line-height: 1.1; margin-bottom: 8px; }
+.modal-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+.modal-rec-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 22px; background: var(--bg-card); border: 1px solid var(--border); margin: 20px 0;
+}
+.modal-rec-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-muted); font-weight: 600; margin-bottom: 4px; }
+.modal-rec-value { font-family: 'Fraunces', serif; font-weight: 600; font-size: 30px; color: var(--gold); }
+.modal-rec-score { font-family: 'Fraunces', serif; font-weight: 300; font-size: 56px; line-height: 1; color: var(--gold); font-variation-settings: '"opsz" 144'; }
+
+.modal-section { margin-bottom: 24px; }
+.modal-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-soft); font-weight: 700; margin-bottom: 14px; }
+
+.modal-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.modal-stat { display: flex; flex-direction: column; gap: 4px; }
+.modal-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-muted); font-weight: 600; }
+.modal-stat-value { font-family: 'Fraunces', serif; font-weight: 500; font-size: 30px; line-height: 1; }
+.modal-stat-value.gold { color: var(--gold); }
+.modal-stat-value.green { color: #4ADE80; }
+.modal-stat-value.copper { color: var(--copper-bright); }
+.modal-stat-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+
+.modal-bars { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding: 14px 0; }
+.modal-bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.modal-bar { width: 100%; background: var(--gold); transition: height 0.7s ease-out; min-height: 4px; }
+.modal-bar-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+.modal-bar-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); font-weight: 600; }
+
+.modal-pre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+.modal-pre-row {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+}
+.modal-pre-key { color: var(--ink-muted); }
+.modal-pre-val { color: var(--ink); font-weight: 500; }
+
+/* ─── ANÁLISE CRÍTICA ─── */
+.critica-header-row {
+  padding: 28px 0 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.critica-period-control { display: flex; align-items: center; gap: 12px; }
+.critica-period-input {
+  width: 70px; padding: 8px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  text-align: center; outline: none;
+}
+.critica-period-input:focus { border-color: var(--gold); }
+.critica-period-btn {
+  padding: 8px 16px; background: var(--gold); color: var(--bg);
+  border: none; cursor: pointer; font-family: 'Inter Tight', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+}
+.critica-period-btn:hover { background: var(--gold-bright); }
+.period-presets { display: flex; gap: 6px; }
+.period-preset-btn {
+  padding: 6px 12px; background: transparent; border: 1px solid var(--border);
+  color: var(--ink-muted); cursor: pointer;
+  font-family: 'Inter Tight', sans-serif; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; transition: all 0.2s;
+}
+.period-preset-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
+.period-preset-btn.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+
+.critica-grid { 
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; 
+  padding: 28px 0; 
+}
+@media (max-width: 900px) { .critica-grid { grid-template-columns: 1fr; } }
+
+.critica-card {
+  background: var(--bg-card); border: 1px solid var(--border); padding: 22px;
+}
+.critica-card.full { grid-column: 1 / -1; }
+.critica-card.third { grid-column: span 1; }
+
+.critica-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+.critica-subtitle { font-size: 12px; color: var(--ink-muted); margin-bottom: 18px; }
+
+.wr-bigstat { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.wr-bigstat-value { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 400; color: var(--gold); font-variation-settings: '"opsz" 144'; line-height: 1; }
+.wr-bigstat-detail { display: flex; flex-direction: column; gap: 2px; }
+.wr-bigstat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-muted); font-weight: 600; }
+.wr-bigstat-sub { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink-soft); }
+
+/* Mini stats */
+.mini-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.mini-stat { display: flex; flex-direction: column; gap: 4px; padding: 14px; background: var(--bg); border: 1px solid var(--border); }
+.mini-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-muted); font-weight: 600; }
+.mini-stat-value { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; line-height: 1; }
+.mini-stat-value.gold { color: var(--gold); }
+.mini-stat-value.green { color: #4ADE80; }
+.mini-stat-value.copper { color: var(--copper-bright); }
+.mini-stat-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+
+/* Tabela */
+.crit-table { width: 100%; border-collapse: collapse; }
+.crit-table th, .crit-table td {
+  padding: 9px 10px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border);
+}
+.crit-table th {
+  font-family: 'Inter Tight', sans-serif; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.15em; color: var(--ink-muted); font-weight: 600;
+  border-bottom: 2px solid var(--border);
+}
+.crit-table td.num { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.fx-row td { padding: 0 10px 12px !important; border-bottom: 2px solid var(--border) !important; }
+.fx-breakdown { display: flex; gap: 6px; padding-top: 2px; }
+.fx-mini { 
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 6px 4px; background: var(--bg); border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+}
+.fx-mini b { font-size: 14px; font-weight: 700; }
+.fx-mini i { font-size: 9px; color: var(--ink-muted); font-style: normal; margin-top: 2px; }
+.fx-mini.empty { color: var(--ink-dim); align-items: center; justify-content: center; }
+
+/* WR por mercado — cards macro */
+.mkt-macro-grid { display: flex; flex-direction: column; gap: 10px; }
+.mkt-macro { padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); }
+.mkt-macro-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.mkt-macro-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+.mkt-macro-body { display: flex; align-items: center; gap: 20px; }
+.mkt-macro-wr { flex: 1; }
+.mkt-macro-wr-val { font-family: 'Fraunces', serif; font-size: 34px; font-weight: 500; line-height: 1; display: block; margin-bottom: 8px; }
+.mkt-macro-wr-bar { display: block; position: relative; height: 6px; background: rgba(255,255,255,0.06); }
+.mkt-macro-wr-bar span { position: absolute; left: 0; top: 0; height: 100%; }
+.mkt-macro-wr-bar i { position: absolute; top: -2px; width: 2px; height: 10px; background: var(--ink); opacity: 0.5; }
+.mkt-macro-stats { display: grid; grid-template-columns: repeat(4, auto); gap: 18px; }
+.mkt-macro-stats > div { display: flex; flex-direction: column; gap: 2px; }
+.mm-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-muted); font-weight: 600; }
+.mm-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; }
+
+/* Onde concentrar banca */
+.cb-list { display: flex; flex-direction: column; gap: 8px; }
+.cb-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); transition: border-color 0.2s; }
+.cb-row:hover { border-color: var(--border-bright); }
+.cb-rank { font-size: 18px; min-width: 32px; text-align: center; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--ink-muted); }
+.cb-info { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+.cb-mkt { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; }
+.cb-faixa { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+.cb-metrics { display: flex; gap: 18px; margin-left: auto; }
+.cb-metric { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cb-m-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
+.cb-m-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); }
+
+/* Preditores por mercado */
+.pred-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.pred-mkt { padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); }
+.pred-mkt-name { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; padding-bottom: 8px; margin-bottom: 10px; }
+.pred-var { display: flex; flex-direction: column; gap: 2px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.pred-var:last-child { border-bottom: none; }
+.pred-var-name { font-size: 12px; color: var(--ink); font-weight: 600; }
+.pred-var-detail { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+.crit-table td.text-right, .crit-table th.text-right { text-align: right; }
+.crit-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.wr-bar { display: inline-block; width: 60px; height: 4px; background: var(--border); position: relative; margin-left: 8px; vertical-align: middle; }
+.wr-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--gold); }
+
+/* Insights */
+.insight {
+  padding: 14px 16px; border-left: 3px solid; background: var(--bg);
+  margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start;
+}
+.insight.destaque { border-left-color: var(--gold); background: linear-gradient(90deg, rgba(212,176,98,0.05) 0%, transparent 100%); }
+.insight.alerta { border-left-color: var(--copper); background: linear-gradient(90deg, rgba(197,105,57,0.05) 0%, transparent 100%); }
+.insight.info { border-left-color: var(--ink-muted); background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%); }
+.insight-icon { font-family: 'Fraunces', serif; font-size: 22px; line-height: 1; margin-top: -2px; }
+.insight.destaque .insight-icon { color: var(--gold); }
+.insight.alerta .insight-icon { color: var(--copper-bright); }
+.insight.info .insight-icon { color: var(--ink-muted); }
+.insight-msg { font-size: 14px; line-height: 1.5; color: var(--ink); flex: 1; }
+
+/* Heatmap reconstruído */
+.heatmap-wrapper { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: stretch; }
+.heatmap-labels-col { display: flex; flex-direction: column; gap: 4px; padding-top: 32px; }
+.heatmap-label-row {
+  height: 32px; display: flex; align-items: center;
+  font-size: 12px; color: var(--ink-soft); font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.heatmap-cells-area { display: flex; flex-direction: column; gap: 4px; }
+.heatmap-header-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding-bottom: 4px; }
+.heatmap-col-label { 
+  text-align: center; font-size: 11px; color: var(--ink-muted);
+  font-family: 'JetBrains Mono', monospace; font-weight: 600;
+}
+.heatmap-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.heatmap-cell {
+  height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  color: var(--bg); position: relative; cursor: help; gap: 1px;
+}
+.heatmap-cell .hm-wr { font-size: 13px; line-height: 1; }
+.heatmap-cell .hm-odd { font-size: 10px; font-weight: 500; opacity: 0.75; line-height: 1; }
+.heatmap-cell.empty { background: var(--bg-card-elev); border: 1px solid var(--border); color: var(--ink-dim); font-weight: 400; height: 44px; }
+.heatmap-label-row { height: 44px !important; }
+
+/* Erros recentes table */
+.erros-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.erros-table th, .erros-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: center; }
+.erros-table th:nth-child(2), .erros-table td:nth-child(2) { text-align: left; }
+.erros-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-muted); font-weight: 600; }
+.erros-table td { font-family: 'JetBrains Mono', monospace; }
+.erros-table td.jogo-cell { font-family: 'Fraunces', serif; font-weight: 500; font-size: 13px; text-align: left; }
+.placar-cell { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+/* Empty */
+.empty { padding: 80px 0; text-align: center; color: var(--ink-muted); font-family: 'Fraunces', serif; font-style: italic; font-size: 18px; }
+
+/* Footer */
+.footer { padding: 48px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; }
+.footer-quote { font-family: 'Fraunces', serif; font-weight: 400; font-style: italic; font-size: 20px; line-height: 1.4; margin-bottom: 6px; max-width: 600px; }
+.footer-sub { font-size: 12px; color: var(--ink-muted); }
+.footer-right { text-align: right; }
+.footer-name { font-size: 10px; text-transform: uppercase; letter-spacing: 0.28em; color: var(--ink-muted); margin-bottom: 4px; font-weight: 600; }
+.footer-desk { font-size: 12px; color: var(--ink-dim); }
+
+/* BT_CSS_START */
+.bt-sec { margin: 32px 0; }
+.bt-sec-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 12px; margin-bottom: 22px; border-bottom: 1px solid var(--border); }
+.bt-sec-num { font-family: 'Fraunces', serif; font-weight: 300; font-size: 38px; color: var(--gold); line-height: 1; font-variation-settings: '"opsz" 144'; }
+.bt-sec-title { font-family: 'Fraunces', serif; font-weight: 500; font-size: 22px; color: var(--ink); }
+.bt-sec-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.2em; margin-left: auto; }
+.bt-cenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 900px) { .bt-cenarios { grid-template-columns: 1fr; } }
+.bt-cen { position: relative; padding: 26px 22px; background: var(--bg-card); border: 1px solid var(--border); }
+.bt-cen.real { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+.bt-cen.real::before { content: "RECOMENDADO"; position: absolute; top: 12px; right: 12px; font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.2em; color: var(--gold); border: 1px solid var(--gold); padding: 2px 7px; }
+.bt-cen-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.22em; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 16px; }
+.bt-cen-val { font-family: 'Fraunces', serif; font-weight: 300; font-size: 50px; line-height: 1; margin-bottom: 4px; font-variation-settings: '"opsz" 144'; }
+.bt-cen-val.green { color: #4ADE80; } .bt-cen-val.gold { color: var(--gold); } .bt-cen-val.copper { color: var(--copper-bright); }
+.bt-cen-unit { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-muted); margin-bottom: 18px; }
+.bt-cen-det { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft); line-height: 1.7; padding-top: 12px; border-top: 1px solid var(--border); }
+.bt-cen-det b { color: var(--ink); font-weight: 600; }
+.bt-note { margin-top: 14px; padding: 13px 16px; background: var(--bg); border-left: 2px solid var(--copper); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); line-height: 1.6; }
+.bt-note b { color: var(--ink-soft); }
+.bt-banca { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; padding: 16px 22px; background: var(--bg-card); border: 1px solid var(--border); }
+.bt-banca-lbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-muted); }
+.bt-banca-in { flex: 1; -webkit-appearance: none; appearance: none; height: 3px; background: var(--border); outline: none; }
+.bt-banca-in::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--gold); cursor: pointer; border-radius: 50%; }
+.bt-banca-in::-moz-range-thumb { width: 16px; height: 16px; background: var(--gold); cursor: pointer; border-radius: 50%; border: none; }
+.bt-banca-val { font-family: 'Fraunces', serif; font-weight: 400; font-size: 30px; color: var(--gold); min-width: 130px; text-align: right; font-variation-settings: '"opsz" 144'; }
+.tier-bg { display: inline-block; width: 22px; height: 22px; text-align: center; line-height: 22px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; border: 1px solid; }
+.tier-bg.A { color: #4ADE80; border-color: #4ADE80; } .tier-bg.B { color: var(--gold); border-color: var(--gold); }
+.tier-bg.C { color: var(--copper-bright); border-color: var(--copper-bright); } .tier-bg.D { color: var(--ink-muted); border-color: var(--ink-muted); }
+.bt-tbl { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.bt-tbl th { text-align: left; padding: 11px 12px; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; }
+.bt-tbl th:hover { color: var(--ink); }
+.bt-tbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--ink); }
+.bt-tbl tr:hover td { background: rgba(212,176,98,0.03); }
+.bt-tbl td.r { text-align: right; } .bt-tbl th.r { text-align: right; }
+.bt-tbl td.green { color: #4ADE80; font-weight: 600; } .bt-tbl td.gold { color: var(--gold); font-weight: 600; }
+.bt-tbl td.copper { color: var(--copper-bright); } .bt-tbl td.dim { color: var(--ink-muted); }
+.bt-mkt-tag { display: inline-block; padding: 1px 7px; font-size: 10px; font-weight: 600; color: var(--bg); }
+.bt-tipo { display: inline-block; padding: 1px 7px; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; border-left: 2px solid; padding-left: 6px; }
+.bt-tipo.SOLIDO { color: #4ADE80; border-color: #4ADE80; } .bt-tipo.validado { color: var(--gold); border-color: var(--gold); }
+.bt-tipo.promissor { color: var(--copper-bright); border-color: var(--copper-bright); } .bt-tipo.pista { color: var(--ink-dim); border-color: var(--ink-dim); }
+.bt-filtros { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 12px 0 16px; }
+.bt-chk { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
+.bt-chk input { accent-color: var(--gold); cursor: pointer; }
+.bt-chk:hover { color: var(--ink); }
+.bt-sel { background: var(--bg-card); color: var(--ink); border: 1px solid var(--border); padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.bt-cnt { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-muted); }
+.bt-cnt b { color: var(--gold); }
+.bt-ligatbl { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.bt-ligatbl th { background: var(--bg); padding: 9px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; border-bottom: 1px solid var(--border); text-align: center; }
+.bt-ligatbl th:first-child { text-align: left; }
+.bt-ligatbl td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: center; color: var(--ink); }
+.bt-ligatbl td:first-child { text-align: left; font-weight: 500; }
+.bt-ligatbl td small { display: block; font-size: 9px; color: var(--ink-dim); margin-top: 2px; }
+.bt-liga-ok { background: rgba(74,222,128,0.12); color: #4ADE80; } .bt-liga-ok small { color: rgba(74,222,128,0.6); }
+.bt-liga-no { color: var(--ink-dim); }
+.bt-heat-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; padding: 11px 6px; }
+.bt-heat-cell .w { font-size: 15px; font-weight: 700; } .bt-heat-cell .m { font-size: 9px; opacity: 0.75; margin-top: 2px; }
+.bt-empty { padding: 60px 20px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-dim); border: 1px dashed var(--border); }
+.bt-empty h3 { font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink-muted); margin-bottom: 8px; font-style: italic; }
+/* BT_CSS_END */
+
+
+
+
+/* BADGE_EDGE_CSS */
+.recom-badge.edgeN-ALTA  { background: linear-gradient(135deg, rgba(74,222,128,0.18), rgba(30,60,42,0.08));
+  border: 1px solid rgba(74,222,128,0.5); color:#4ADE80; }
+.recom-badge.edgeN-MÉDIA { background: linear-gradient(135deg, rgba(212,176,98,0.16), rgba(50,42,20,0.08));
+  border: 1px solid rgba(212,176,98,0.5); color:var(--gold); }
+.recom-badge.edgeN-BAIXA { background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border); color:var(--ink-muted); }
+.recom-edge-nivel { font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700;
+  letter-spacing:0.16em; margin-top:2px; }
+.recom-modelo { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--ink-muted);
+  margin-top:6px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.08);
+  letter-spacing:0.03em; opacity:0.7; }
+/* /BADGE_EDGE_CSS */
+
+/* AJUSTES_CSS */
+.scores-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:6px 16px 14px; }
+.si-edge { font-size:7px; font-weight:700; letter-spacing:0.06em; padding:1px 4px; border-radius:2px; vertical-align:middle; }
+.si-edge.e-ALTA  { color:#4ADE80; background:rgba(74,222,128,0.14); }
+.si-edge.e-MÉDIA { color:var(--gold); background:rgba(212,176,98,0.14); }
+.si-edge.e-BAIXA { display:none; }
+.score-bar-fill.baredge-ALTA  { background:#4ADE80; }
+.score-bar-fill.baredge-MÉDIA { background:var(--gold); }
+.score-bar-fill.baredge-BAIXA { background:var(--ink-muted); }
+.score-bar-fill.baredge-off   { background:rgba(255,255,255,0.1); }
+/* selo mini (1 linha) */
+.edge-mini { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 16px 12px;
+  padding:7px 11px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px;
+  border-left:2px solid var(--border); background:rgba(255,255,255,0.015); }
+.edge-mini.edge-ALTA  { border-left-color:#4ADE80; }
+.edge-mini.edge-MÉDIA { border-left-color:var(--gold); }
+.em-mkt { font-weight:700; color:var(--ink); }
+.edge-mini.edge-ALTA .em-mkt  { color:#4ADE80; }
+.edge-mini.edge-MÉDIA .em-mkt { color:var(--gold); }
+.em-sep { color:var(--ink-muted); }
+.em-wr, .em-odd { color:var(--ink-soft); }
+.em-lucro { color:var(--ink-soft); margin-left:auto; }
+.em-aviso { color:var(--gold); font-size:9px; opacity:0.85; flex-basis:100%; }
+/* modal edge enxuto */
+.edge-modal-grid { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
+.edge-modal-row { display:flex; justify-content:space-between; align-items:center;
+  padding:8px 11px; border-radius:3px; background:var(--bg-card); border:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace; font-size:11px; }
+.edge-modal-row.lvl-ALTA  { border-left:2px solid #4ADE80; }
+.edge-modal-row.lvl-MÉDIA { border-left:2px solid var(--gold); }
+.edge-modal-row.nao-acion { opacity:0.4; }
+.emr-mkt { font-weight:700; color:var(--ink); }
+.emr-info { color:var(--ink-soft); font-size:10px; }
+.edge-modal-row.lvl-ALTA .emr-info  { color:#4ADE80; }
+.edge-modal-row.lvl-MÉDIA .emr-info { color:var(--gold); }
+/* /AJUSTES_CSS */
+/* DUAL_BANNER_CSS */
+.edge-banner { display:flex; align-items:center; justify-content:space-between; padding:9px 16px; position:relative; overflow:hidden; }
+.edge-banner.ALTA  { background:linear-gradient(90deg, rgba(74,222,128,0.2), transparent); }
+.edge-banner.MÉDIA { background:linear-gradient(90deg, rgba(212,176,98,0.2), transparent); }
+.edge-banner.BAIXA { background:linear-gradient(90deg, rgba(120,116,105,0.12), transparent); }
+.edge-banner::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+.edge-banner.ALTA::before  { background:#4ADE80; box-shadow:0 0 12px rgba(74,222,128,0.6); }
+.edge-banner.MÉDIA::before { background:var(--gold); box-shadow:0 0 12px rgba(212,176,98,0.5); }
+.eb-left { display:flex; align-items:center; gap:9px; }
+.eb-dot { width:7px; height:7px; border-radius:50%; }
+.edge-banner.ALTA .eb-dot { background:#4ADE80; box-shadow:0 0 8px #4ADE80; }
+.edge-banner.MÉDIA .eb-dot { background:var(--gold); box-shadow:0 0 8px var(--gold); }
+.edge-banner.BAIXA .eb-dot { background:var(--ink-muted); }
+.eb-tag { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.16em; }
+.edge-banner.ALTA .eb-tag { color:#4ADE80; } .edge-banner.MÉDIA .eb-tag { color:var(--gold); } .edge-banner.BAIXA .eb-tag { color:var(--ink-muted); }
+.eb-mkt { font-family:'Fraunces',serif; font-size:14px; font-weight:600; color:var(--ink); }
+.eb-wr { font-family:'Fraunces',serif; font-size:20px; font-weight:600; }
+.edge-banner.ALTA .eb-wr { color:#4ADE80; } .edge-banner.MÉDIA .eb-wr { color:var(--gold); } .edge-banner.BAIXA .eb-wr { color:var(--ink-soft); }
+.dual-badge { display:flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; flex-shrink:0; }
+.dual-col { padding:8px 11px; text-align:center; min-width:68px; }
+.dual-col.modelo { background:rgba(255,255,255,0.02); border-right:1px solid var(--border); }
+.dual-head { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:0.14em; color:var(--ink-muted); margin-bottom:4px; font-weight:700; }
+.dual-val { font-family:'Fraunces',serif; font-size:24px; font-weight:600; line-height:1; color:var(--ink); }
+.dual-val.lvl-ALTA { color:#4ADE80; } .dual-val.lvl-MÉDIA { color:var(--gold); } .dual-val.lvl-BAIXA { color:var(--ink-soft); }
+.dual-mkt { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--ink-soft); margin-top:4px; }
+.dual-mkt.lvl-ALTA { color:#4ADE80; } .dual-mkt.lvl-MÉDIA { color:var(--gold); }
+.match-card.edge-ALTA { border-left:3px solid #4ADE80; } .match-card.edge-MÉDIA { border-left:3px solid var(--gold); }
+/* /DUAL_BANNER_CSS */
+/* PROJ_CSS */
+.bt-cen-rsent { font-size:11px; color:var(--ink-soft); margin:6px 0; padding:6px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.bt-cen-rsent .green { color:#4ADE80; } .bt-cen-rsent .copper { color:#E27E50; }
+.bt-cen-mkt { width:100%; margin-top:10px; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:10px; }
+.bt-cen-mkt th { color:var(--ink-muted); font-weight:600; text-align:left; padding:3px 4px; border-bottom:1px solid var(--border); font-size:8px; letter-spacing:0.05em; text-transform:uppercase; }
+.bt-cen-mkt td { padding:4px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.bt-cen-mkt td.r, .bt-cen-mkt th.r { text-align:right; }
+.bt-cen-mkt td.green { color:#4ADE80; } .bt-cen-mkt td.copper { color:#E27E50; } .bt-cen-mkt td.dim { color:var(--ink-muted); }
+/* /PROJ_CSS */
+/* TOTAL_MES_CSS */
+.bt-cen-total { font-size:11px; color:var(--ink-soft); margin:6px 0; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.bt-cen-total .green { color:#4ADE80; } .bt-cen-total .copper { color:#E27E50; }
+.bt-cen-total-sub { color:var(--ink-muted); font-size:9px; }
+/* /TOTAL_MES_CSS */
+/* CALC_ODD_CSS */
+.edge-modal-row { flex-direction:column; align-items:stretch; gap:7px; }
+.emr-top { display:flex; justify-content:space-between; align-items:center; }
+.emr-calc { display:flex; flex-direction:column; gap:5px; }
+.odd-input { width:120px; padding:6px 9px; background:rgba(0,0,0,0.3); border:1px solid var(--border);
+  border-radius:4px; color:var(--ink); font-family:'JetBrains Mono',monospace; font-size:12px; }
+.odd-input:focus { outline:none; border-color:var(--gold); }
+.odd-res { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.odd-res .cor-verde { color:#4ADE80; font-weight:700; }
+.odd-res .cor-copper { color:#E27E50; font-weight:700; }
+.cor-dim { color:var(--ink-muted); }
+.odd-nota { font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--ink-muted);
+  margin-top:10px; padding-top:8px; border-top:1px solid var(--border); line-height:1.5; }
+.odd-nota b { color:var(--gold); }
+/* /CALC_ODD_CSS */
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script id="dados-json" type="application/json">{"backtest": {"meta": {"n_total": 20107, "periodo": "2023-07-22 ate 2026-05-29", "ligas": ["2. Bundesliga", "A-League", "Allsvenskan", "Bundesliga", "Championship", "Czech Liga", "Ekstraklasa", "Eliteserien", "Eredivisie", "J1 League", "Jupiler Pro League", "K League 1", "La Liga", "Liga MX", "Liga Profesional Argentina", "Ligue 1", "Ligue 2", "Major League Soccer", "Premier League", "Premiership", "Primeira Liga", "Primera A", "Primera División", "Segunda División", "Serie A", "Serie B", "Super League", "Super League 1", "Superliga", "Süper Lig"], "n_ligas": 30, "temporadas": ["2023/24", "2024/25", "2025/26"], "meses_dados": 33}, "mercados": {"OVER_HT": {"n": 13371, "wr": 72.1, "be": 80, "odd": 1.25, "lucro_100": -9.92, "status": "LIVE"}, "OVER_FT": {"n": 15604, "wr": 79.5, "be": 80, "odd": 1.25, "lucro_100": -0.65, "status": "EVITAR"}, "UNDER_HT": {"n": 5399, "wr": 32.5, "be": 35, "odd": 2.86, "lucro_100": -7.07, "status": "EVITAR"}, "UNDER_FT": {"n": 5659, "wr": 24.3, "be": 25, "odd": 4.0, "lucro_100": -2.81, "status": "EVITAR"}, "UNDER_25_FT": {"n": 7685, "wr": 52.5, "be": 54, "odd": 1.85, "lucro_100": -2.72, "status": "EVITAR"}}, "bolsoes": [{"mercado": "OVER_FT", "combo": "score 70-79 + L>=3.0", "n": 2462, "wr": 82.2, "ic_baixo": 80.7, "ic_alto": 83.7, "be": 80, "lucro_100": 2.75, "validado": true, "promissor": false, "solido": true, "agrega": 2.1}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + L<=2.0", "n": 1451, "wr": 57.5, "ic_baixo": 54.9, "ic_alto": 60.1, "be": 54, "lucro_100": 6.48, "validado": true, "promissor": false, "solido": true, "agrega": 1.1}, {"mercado": "OVER_FT", "combo": "score 90-100 + L>=3.0", "n": 2657, "wr": 81.9, "ic_baixo": 80.5, "ic_alto": 83.4, "be": 80, "lucro_100": 2.37, "validado": true, "promissor": false, "solido": true, "agrega": 0.9}, {"mercado": "OVER_FT", "combo": "score 90-100 + L>=3.0 + cs<=25", "n": 2177, "wr": 81.9, "ic_baixo": 80.3, "ic_alto": 83.6, "be": 80, "lucro_100": 2.37, "validado": true, "promissor": false, "solido": true, "agrega": 0.9}, {"mercado": "UNDER_FT", "combo": "score 60-69 + L 2.0-2.5 + cs<=25", "n": 139, "wr": 33.8, "ic_baixo": 25.9, "ic_alto": 41.7, "be": 25, "lucro_100": 35.2, "validado": true, "promissor": false, "solido": true, "agrega": 8.8}, {"mercado": "UNDER_25_FT", "combo": "score 90-100", "n": 2408, "wr": 56.4, "ic_baixo": 54.5, "ic_alto": 58.4, "be": 54, "lucro_100": 4.44, "validado": true, "promissor": false, "solido": true, "agrega": null}, {"mercado": "UNDER_HT", "combo": "score 80-89 + L<=2.0", "n": 270, "wr": 41.9, "ic_baixo": 36.3, "ic_alto": 47.8, "be": 35, "lucro_100": 19.71, "validado": true, "promissor": false, "solido": true, "agrega": 4.2}, {"mercado": "UNDER_FT", "combo": "score 60-69 + forma>=2.6", "n": 114, "wr": 35.1, "ic_baixo": 26.3, "ic_alto": 43.9, "be": 25, "lucro_100": 40.4, "validado": true, "promissor": false, "solido": true, "agrega": 10.1}, {"mercado": "UNDER_FT", "combo": "score 70-79 + L<=2.0 + cs>=35", "n": 460, "wr": 29.8, "ic_baixo": 25.7, "ic_alto": 33.9, "be": 25, "lucro_100": 19.2, "validado": true, "promissor": false, "solido": true, "agrega": 5.0}, {"mercado": "UNDER_FT", "combo": "score 70-79 + L<=2.0", "n": 580, "wr": 29.3, "ic_baixo": 25.5, "ic_alto": 32.9, "be": 25, "lucro_100": 17.2, "validado": true, "promissor": false, "solido": true, "agrega": 4.5}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + forma<=2.2", "n": 2381, "wr": 56.3, "ic_baixo": 54.3, "ic_alto": 58.3, "be": 54, "lucro_100": 4.26, "validado": true, "promissor": false, "solido": true, "agrega": -0.1}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + L<=2.0 + cs<=25", "n": 188, "wr": 61.2, "ic_baixo": 54.3, "ic_alto": 68.1, "be": 54, "lucro_100": 13.33, "validado": true, "promissor": false, "solido": true, "agrega": 4.8}, {"mercado": "UNDER_HT", "combo": "score 80-89 + L<=2.0 + cs<=25", "n": 59, "wr": 47.5, "ic_baixo": 35.6, "ic_alto": 59.3, "be": 35, "lucro_100": 35.71, "validado": true, "promissor": false, "solido": false, "agrega": 9.8}, {"mercado": "OVER_FT", "combo": "score 60-69 + cs>=35", "n": 972, "wr": 82.4, "ic_baixo": 80.0, "ic_alto": 84.8, "be": 80, "lucro_100": 3.0, "validado": false, "promissor": true, "solido": true, "agrega": 2.9}, {"mercado": "OVER_FT", "combo": "score 90-100 + cs<=25", "n": 2868, "wr": 81.4, "ic_baixo": 80.0, "ic_alto": 82.7, "be": 80, "lucro_100": 1.75, "validado": false, "promissor": true, "solido": true, "agrega": 0.4}, {"mercado": "OVER_FT", "combo": "score 70-79 + L>=3.0 + cs<=25", "n": 1457, "wr": 81.9, "ic_baixo": 79.9, "ic_alto": 83.9, "be": 80, "lucro_100": 2.37, "validado": false, "promissor": true, "solido": true, "agrega": 1.8}, {"mercado": "UNDER_FT", "combo": "score 60-69 + cs<=25", "n": 194, "wr": 30.9, "ic_baixo": 24.7, "ic_alto": 37.6, "be": 25, "lucro_100": 23.6, "validado": false, "promissor": true, "solido": true, "agrega": 5.9}, {"mercado": "UNDER_FT", "combo": "score 80-89 + L<=2.0 + cs>=35", "n": 172, "wr": 31.4, "ic_baixo": 24.4, "ic_alto": 38.4, "be": 25, "lucro_100": 25.6, "validado": false, "promissor": true, "solido": true, "agrega": 6.9}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + cs<=25", "n": 352, "wr": 58.8, "ic_baixo": 53.7, "ic_alto": 63.9, "be": 54, "lucro_100": 8.89, "validado": false, "promissor": true, "solido": true, "agrega": 2.4}, {"mercado": "OVER_FT", "combo": "score 60-69 + L>=3.0 + cs>=35", "n": 358, "wr": 83.2, "ic_baixo": 79.1, "ic_alto": 86.9, "be": 80, "lucro_100": 4.0, "validado": false, "promissor": true, "solido": true, "agrega": 3.7}, {"mercado": "UNDER_HT", "combo": "score 80-89 + L<=2.0 + cs>=35", "n": 211, "wr": 40.3, "ic_baixo": 33.2, "ic_alto": 46.9, "be": 35, "lucro_100": 15.14, "validado": false, "promissor": true, "solido": true, "agrega": 2.6}, {"mercado": "OVER_FT", "combo": "score 90-100 + forma>=2.6", "n": 3552, "wr": 81.0, "ic_baixo": 79.7, "ic_alto": 82.3, "be": 80, "lucro_100": 1.25, "validado": false, "promissor": true, "solido": true, "agrega": 0.0}, {"mercado": "OVER_FT", "combo": "score 90-100", "n": 3560, "wr": 81.0, "ic_baixo": 79.7, "ic_alto": 82.3, "be": 80, "lucro_100": 1.25, "validado": false, "promissor": true, "solido": true, "agrega": null}, {"mercado": "OVER_FT", "combo": "score 60-69 + L>=3.0", "n": 419, "wr": 82.8, "ic_baixo": 79.2, "ic_alto": 86.4, "be": 80, "lucro_100": 3.5, "validado": false, "promissor": true, "solido": true, "agrega": 3.3}, {"mercado": "OVER_FT", "combo": "score 50-59 + L>=3.0 + cs<=25", "n": 152, "wr": 84.2, "ic_baixo": 78.3, "ic_alto": 90.1, "be": 80, "lucro_100": 5.25, "validado": false, "promissor": true, "solido": true, "agrega": 7.5}, {"mercado": "UNDER_FT", "combo": "score 50-59 + L<=2.0", "n": 91, "wr": 30.8, "ic_baixo": 22.0, "ic_alto": 40.7, "be": 25, "lucro_100": 23.2, "validado": false, "promissor": true, "solido": true, "agrega": 7.5}, {"mercado": "UNDER_HT", "combo": "score 80-89 + forma<=2.2", "n": 490, "wr": 37.8, "ic_baixo": 33.5, "ic_alto": 42.0, "be": 35, "lucro_100": 8.0, "validado": false, "promissor": true, "solido": true, "agrega": 0.1}, {"mercado": "UNDER_HT", "combo": "score 80-89 + cs>=35", "n": 401, "wr": 38.2, "ic_baixo": 33.4, "ic_alto": 43.1, "be": 35, "lucro_100": 9.14, "validado": false, "promissor": true, "solido": true, "agrega": 0.5}, {"mercado": "OVER_FT", "combo": "score 50-59 + L>=3.0", "n": 187, "wr": 83.4, "ic_baixo": 78.1, "ic_alto": 88.8, "be": 80, "lucro_100": 4.25, "validado": false, "promissor": true, "solido": true, "agrega": 6.7}, {"mercado": "UNDER_HT", "combo": "score 80-89", "n": 509, "wr": 37.7, "ic_baixo": 33.6, "ic_alto": 41.8, "be": 35, "lucro_100": 7.71, "validado": false, "promissor": true, "solido": true, "agrega": null}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + L 2.0-2.5 + cs<=25", "n": 186, "wr": 58.1, "ic_baixo": 51.1, "ic_alto": 65.1, "be": 54, "lucro_100": 7.59, "validado": false, "promissor": true, "solido": true, "agrega": 1.7}, {"mercado": "OVER_FT", "combo": "score 60-69 + L 2.0-2.5 + cs>=35", "n": 124, "wr": 83.9, "ic_baixo": 77.4, "ic_alto": 90.3, "be": 80, "lucro_100": 4.88, "validado": false, "promissor": true, "solido": true, "agrega": 4.4}, {"mercado": "OVER_FT", "combo": "score 80-89 + L>=3.0", "n": 888, "wr": 81.3, "ic_baixo": 78.7, "ic_alto": 83.9, "be": 80, "lucro_100": 1.62, "validado": false, "promissor": true, "solido": true, "agrega": 1.9}, {"mercado": "UNDER_HT", "combo": "score 90-100 + L 2.0-2.5 + cs>=35", "n": 84, "wr": 40.5, "ic_baixo": 29.8, "ic_alto": 51.2, "be": 35, "lucro_100": 15.71, "validado": false, "promissor": true, "solido": true, "agrega": 6.0}, {"mercado": "UNDER_FT", "combo": "score 80-89 + cs>=35", "n": 344, "wr": 27.3, "ic_baixo": 22.7, "ic_alto": 32.0, "be": 25, "lucro_100": 9.2, "validado": false, "promissor": true, "solido": true, "agrega": 2.8}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + L<=2.0 + cs>=35", "n": 915, "wr": 55.6, "ic_baixo": 52.5, "ic_alto": 58.7, "be": 54, "lucro_100": 2.96, "validado": false, "promissor": true, "solido": true, "agrega": -0.8}, {"mercado": "OVER_FT", "combo": "score 60-69 + forma>=2.6", "n": 1438, "wr": 80.9, "ic_baixo": 78.9, "ic_alto": 83.0, "be": 80, "lucro_100": 1.12, "validado": false, "promissor": true, "solido": true, "agrega": 1.4}, {"mercado": "UNDER_FT", "combo": "score 60-69 + L<=2.0", "n": 246, "wr": 27.6, "ic_baixo": 22.0, "ic_alto": 33.3, "be": 25, "lucro_100": 10.4, "validado": false, "promissor": true, "solido": true, "agrega": 2.6}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + cs>=35", "n": 1428, "wr": 55.1, "ic_baixo": 52.6, "ic_alto": 57.7, "be": 54, "lucro_100": 2.04, "validado": false, "promissor": true, "solido": true, "agrega": -1.3}, {"mercado": "UNDER_FT", "combo": "score 50-59 + L<=2.0 + cs<=25", "n": 89, "wr": 29.2, "ic_baixo": 20.2, "ic_alto": 39.3, "be": 25, "lucro_100": 16.8, "validado": false, "promissor": false, "solido": true, "agrega": 5.9}, {"mercado": "OVER_FT", "combo": "score 60-69 + L 2.5-3.0 + cs>=35", "n": 490, "wr": 81.4, "ic_baixo": 78.2, "ic_alto": 84.9, "be": 80, "lucro_100": 1.75, "validado": false, "promissor": false, "solido": true, "agrega": 1.9}, {"mercado": "OVER_FT", "combo": "score 70-79 + L>=3.0 + cs>=35", "n": 259, "wr": 81.9, "ic_baixo": 76.8, "ic_alto": 86.5, "be": 80, "lucro_100": 2.37, "validado": false, "promissor": false, "solido": true, "agrega": 1.8}, {"mercado": "OVER_FT", "combo": "score 70-79 + forma>=2.6", "n": 3971, "wr": 80.4, "ic_baixo": 79.2, "ic_alto": 81.7, "be": 80, "lucro_100": 0.5, "validado": false, "promissor": false, "solido": true, "agrega": 0.3}, {"mercado": "UNDER_25_FT", "combo": "score 50-59 + forma<=2.2", "n": 63, "wr": 58.7, "ic_baixo": 47.6, "ic_alto": 69.8, "be": 54, "lucro_100": 8.7, "validado": false, "promissor": false, "solido": true, "agrega": 9.8}, {"mercado": "UNDER_HT", "combo": "score 50-59 + L 2.5-3.0 + cs<=25", "n": 149, "wr": 37.6, "ic_baixo": 30.2, "ic_alto": 45.0, "be": 35, "lucro_100": 7.43, "validado": false, "promissor": false, "solido": true, "agrega": 5.7}, {"mercado": "OVER_FT", "combo": "score 70-79 + cs>=35", "n": 516, "wr": 80.8, "ic_baixo": 77.5, "ic_alto": 84.1, "be": 80, "lucro_100": 1.0, "validado": false, "promissor": false, "solido": true, "agrega": 0.7}, {"mercado": "UNDER_FT", "combo": "score 60-69 + L<=2.0 + cs<=25", "n": 51, "wr": 27.5, "ic_baixo": 15.7, "ic_alto": 39.2, "be": 25, "lucro_100": 10.0, "validado": false, "promissor": false, "solido": false, "agrega": 2.5}, {"mercado": "UNDER_FT", "combo": "score 70-79 + forma<=2.2", "n": 1044, "wr": 25.5, "ic_baixo": 22.9, "ic_alto": 28.3, "be": 25, "lucro_100": 2.0, "validado": false, "promissor": false, "solido": true, "agrega": 0.7}, {"mercado": "UNDER_25_FT", "combo": "score 90-100 + L 2.0-2.5", "n": 1041, "wr": 54.6, "ic_baixo": 51.5, "ic_alto": 57.4, "be": 54, "lucro_100": 1.11, "validado": false, "promissor": false, "solido": true, "agrega": -1.8}, {"mercado": "UNDER_FT", "combo": "score 60-69 + L 2.5-3.0 + cs>=35", "n": 108, "wr": 26.9, "ic_baixo": 18.5, "ic_alto": 35.2, "be": 25, "lucro_100": 7.6, "validado": false, "promissor": false, "solido": true, "agrega": 1.9}, {"mercado": "UNDER_HT", "combo": "score 80-89 + cs<=25", "n": 108, "wr": 36.1, "ic_baixo": 27.8, "ic_alto": 45.4, "be": 35, "lucro_100": 3.14, "validado": false, "promissor": false, "solido": true, "agrega": -1.6}, {"mercado": "OVER_FT", "combo": "score 60-69 + L>=3.0 + cs<=25", "n": 56, "wr": 80.4, "ic_baixo": 69.6, "ic_alto": 91.1, "be": 80, "lucro_100": 0.5, "validado": false, "promissor": false, "solido": false, "agrega": 0.9}, {"mercado": "UNDER_FT", "combo": "score 60-69 + L 2.5-3.0", "n": 222, "wr": 25.7, "ic_baixo": 19.8, "ic_alto": 31.5, "be": 25, "lucro_100": 2.8, "validado": false, "promissor": false, "solido": true, "agrega": 0.7}, {"mercado": "UNDER_25_FT", "combo": "score 60-69 + L 2.0-2.5 + cs<=25", "n": 443, "wr": 54.6, "ic_baixo": 49.9, "ic_alto": 59.1, "be": 54, "lucro_100": 1.11, "validado": false, "promissor": false, "solido": true, "agrega": 2.9}, {"mercado": "OVER_FT", "combo": "score 70-79 + forma<=2.2", "n": 84, "wr": 81.0, "ic_baixo": 72.6, "ic_alto": 89.3, "be": 80, "lucro_100": 1.25, "validado": false, "promissor": false, "solido": true, "agrega": 0.9}, {"mercado": "UNDER_FT", "combo": "score 80-89 + L<=2.0", "n": 279, "wr": 25.1, "ic_baixo": 20.4, "ic_alto": 30.5, "be": 25, "lucro_100": 0.4, "validado": false, "promissor": false, "solido": true, "agrega": 0.6}, {"mercado": "OVER_FT", "combo": "score 70-79", "n": 4635, "wr": 80.1, "ic_baixo": 78.9, "ic_alto": 81.2, "be": 80, "lucro_100": 0.12, "validado": false, "promissor": false, "solido": true, "agrega": null}, {"mercado": "OVER_FT", "combo": "score 70-79 + L 2.5-3.0 + cs>=35", "n": 250, "wr": 80.4, "ic_baixo": 75.6, "ic_alto": 85.2, "be": 80, "lucro_100": 0.5, "validado": false, "promissor": false, "solido": true, "agrega": 0.3}, {"mercado": "UNDER_25_FT", "combo": "score 70-79 + cs<=25", "n": 299, "wr": 54.2, "ic_baixo": 48.8, "ic_alto": 59.9, "be": 54, "lucro_100": 0.37, "validado": false, "promissor": false, "solido": true, "agrega": 2.6}, {"mercado": "UNDER_HT", "combo": "score 60-69 + L 2.0-2.5 + cs<=25", "n": 109, "wr": 35.8, "ic_baixo": 27.5, "ic_alto": 45.0, "be": 35, "lucro_100": 2.29, "validado": false, "promissor": false, "solido": true, "agrega": 5.4}, {"mercado": "UNDER_25_FT", "combo": "score 60-69 + cs<=25", "n": 656, "wr": 54.1, "ic_baixo": 50.2, "ic_alto": 57.8, "be": 54, "lucro_100": 0.19, "validado": false, "promissor": false, "solido": true, "agrega": 2.4}], "ligas": [{"liga": "2. Bundesliga", "n_total": 593, "cells": {"OVER_HT": {"wr": 72.2, "n": 478, "acima": false, "margem": -7.8}, "OVER_FT": {"wr": 82.4, "n": 556, "acima": true, "margem": 2.4}, "UNDER_HT": {"wr": 27.3, "n": 88, "acima": false, "margem": -7.7}, "UNDER_FT": {"wr": 13.8, "n": 58, "acima": false, "margem": -11.2}, "UNDER_25_FT": {"wr": 41.6, "n": 101, "acima": false, "margem": -12.4}}}, {"liga": "A-League", "n_total": 315, "cells": {"OVER_HT": {"wr": 75.3, "n": 239, "acima": false, "margem": -4.7}, "OVER_FT": {"wr": 85.9, "n": 269, "acima": true, "margem": 5.9}, "UNDER_HT": {"wr": 31.0, "n": 58, "acima": false, "margem": -4.0}, "UNDER_FT": {"wr": 21.3, "n": 61, "acima": false, "margem": -3.7}, "UNDER_25_FT": {"wr": 41.3, "n": 75, "acima": false, "margem": -12.7}}}, {"liga": "Allsvenskan", "n_total": 218, "cells": {"OVER_HT": {"wr": 71.4, "n": 161, "acima": false, "margem": -8.6}, "OVER_FT": {"wr": 78.2, "n": 179, "acima": false, "margem": -1.8}, "UNDER_HT": {"wr": 27.9, "n": 43, "acima": false, "margem": -7.1}, "UNDER_FT": {"wr": 25.6, "n": 39, "acima": true, "margem": 0.6}, "UNDER_25_FT": {"wr": 53.7, "n": 54, "acima": false, "margem": -0.3}}}, {"liga": "Bundesliga", "n_total": 1295, "cells": {"OVER_HT": {"wr": 77.1, "n": 1113, "acima": false, "margem": -2.9}, "OVER_FT": {"wr": 82.3, "n": 1170, "acima": true, "margem": 2.3}, "UNDER_HT": {"wr": 27.3, "n": 132, "acima": false, "margem": -7.7}, "UNDER_FT": {"wr": 17.3, "n": 139, "acima": false, "margem": -7.7}, "UNDER_25_FT": {"wr": 45.1, "n": 215, "acima": false, "margem": -8.9}}}, {"liga": "Championship", "n_total": 1091, "cells": {"OVER_HT": {"wr": 70.4, "n": 631, "acima": false, "margem": -9.6}, "OVER_FT": {"wr": 76.0, "n": 729, "acima": false, "margem": -4.0}, "UNDER_HT": {"wr": 31.2, "n": 337, "acima": false, "margem": -3.8}, "UNDER_FT": {"wr": 25.9, "n": 441, "acima": true, "margem": 0.9}, "UNDER_25_FT": {"wr": 53.2, "n": 577, "acima": false, "margem": -0.8}}}, {"liga": "Czech Liga", "n_total": 517, "cells": {"OVER_HT": {"wr": 71.3, "n": 341, "acima": false, "margem": -8.7}, "OVER_FT": {"wr": 76.1, "n": 352, "acima": false, "margem": -3.9}, "UNDER_HT": {"wr": 30.8, "n": 130, "acima": false, "margem": -4.2}, "UNDER_FT": {"wr": 25.7, "n": 206, "acima": true, "margem": 0.7}, "UNDER_25_FT": {"wr": 51.5, "n": 239, "acima": false, "margem": -2.5}}}, {"liga": "Ekstraklasa", "n_total": 573, "cells": {"OVER_HT": {"wr": 75.6, "n": 360, "acima": false, "margem": -4.4}, "OVER_FT": {"wr": 77.9, "n": 452, "acima": false, "margem": -2.1}, "UNDER_HT": {"wr": 29.6, "n": 169, "acima": false, "margem": -5.4}, "UNDER_FT": {"wr": 19.6, "n": 158, "acima": false, "margem": -5.4}, "UNDER_25_FT": {"wr": 51.5, "n": 231, "acima": false, "margem": -2.5}}}, {"liga": "Eliteserien", "n_total": 225, "cells": {"OVER_HT": {"wr": 71.4, "n": 175, "acima": false, "margem": -8.6}, "OVER_FT": {"wr": 83.8, "n": 191, "acima": true, "margem": 3.8}, "UNDER_HT": {"wr": 37.1, "n": 35, "acima": true, "margem": 2.1}, "UNDER_FT": {"wr": 18.4, "n": 38, "acima": false, "margem": -6.6}, "UNDER_25_FT": {"wr": 49.1, "n": 55, "acima": false, "margem": -4.9}}}, {"liga": "Eredivisie", "n_total": 927, "cells": {"OVER_HT": {"wr": 76.3, "n": 813, "acima": false, "margem": -3.7}, "OVER_FT": {"wr": 85.5, "n": 867, "acima": true, "margem": 5.5}, "UNDER_HT": {"wr": 23.6, "n": 72, "acima": false, "margem": -11.4}, "UNDER_FT": {"wr": 25.8, "n": 62, "acima": true, "margem": 0.8}, "UNDER_25_FT": {"wr": 44.6, "n": 121, "acima": false, "margem": -9.4}}}, {"liga": "J1 League", "n_total": 267, "cells": {"OVER_HT": {"wr": 64.9, "n": 151, "acima": false, "margem": -15.1}, "OVER_FT": {"wr": 74.0, "n": 204, "acima": false, "margem": -6.0}, "UNDER_HT": {"wr": 47.2, "n": 89, "acima": true, "margem": 12.2}, "UNDER_FT": {"wr": 28.7, "n": 80, "acima": true, "margem": 3.7}, "UNDER_25_FT": {"wr": 59.6, "n": 104, "acima": true, "margem": 5.6}}}, {"liga": "Jupiler Pro League", "n_total": 894, "cells": {"OVER_HT": {"wr": 72.5, "n": 648, "acima": false, "margem": -7.5}, "OVER_FT": {"wr": 77.0, "n": 722, "acima": false, "margem": -3.0}, "UNDER_HT": {"wr": 32.5, "n": 191, "acima": false, "margem": -2.5}, "UNDER_FT": {"wr": 26.5, "n": 226, "acima": true, "margem": 1.5}, "UNDER_25_FT": {"wr": 52.1, "n": 317, "acima": false, "margem": -1.9}}}, {"liga": "K League 1", "n_total": 170, "cells": {"OVER_HT": {"wr": 60.6, "n": 104, "acima": false, "margem": -19.4}, "OVER_FT": {"wr": 76.0, "n": 146, "acima": false, "margem": -4.0}, "UNDER_HT": {"wr": 45.7, "n": 46, "acima": true, "margem": 10.7}, "UNDER_FT": {"wr": 31.2, "n": 32, "acima": true, "margem": 6.2}, "UNDER_25_FT": {"wr": 55.2, "n": 58, "acima": true, "margem": 1.2}}}, {"liga": "La Liga", "n_total": 1126, "cells": {"OVER_HT": {"wr": 69.9, "n": 728, "acima": false, "margem": -10.1}, "OVER_FT": {"wr": 80.7, "n": 914, "acima": true, "margem": 0.7}, "UNDER_HT": {"wr": 34.2, "n": 333, "acima": false, "margem": -0.8}, "UNDER_FT": {"wr": 25.3, "n": 296, "acima": true, "margem": 0.3}, "UNDER_25_FT": {"wr": 57.5, "n": 457, "acima": true, "margem": 3.5}}}, {"liga": "Liga MX", "n_total": 612, "cells": {"OVER_HT": {"wr": 73.4, "n": 485, "acima": false, "margem": -6.6}, "OVER_FT": {"wr": 76.3, "n": 524, "acima": false, "margem": -3.7}, "UNDER_HT": {"wr": 31.5, "n": 89, "acima": false, "margem": -3.5}, "UNDER_FT": {"wr": 24.3, "n": 107, "acima": false, "margem": -0.7}, "UNDER_25_FT": {"wr": 43.2, "n": 146, "acima": false, "margem": -10.8}}}, {"liga": "Liga Profesional Argentina", "n_total": 451, "cells": {"OVER_HT": {"wr": 63.0, "n": 73, "acima": false, "margem": -17.0}, "OVER_FT": {"wr": 61.0, "n": 136, "acima": false, "margem": -19.0}, "UNDER_HT": {"wr": 42.8, "n": 369, "acima": true, "margem": 7.8}, "UNDER_FT": {"wr": 33.7, "n": 365, "acima": true, "margem": 8.7}, "UNDER_25_FT": {"wr": 68.8, "n": 413, "acima": true, "margem": 14.8}}}, {"liga": "Ligue 1", "n_total": 910, "cells": {"OVER_HT": {"wr": 72.9, "n": 665, "acima": false, "margem": -7.1}, "OVER_FT": {"wr": 79.9, "n": 760, "acima": false, "margem": -0.1}, "UNDER_HT": {"wr": 30.5, "n": 200, "acima": false, "margem": -4.5}, "UNDER_FT": {"wr": 22.2, "n": 203, "acima": false, "margem": -2.8}, "UNDER_25_FT": {"wr": 50.7, "n": 280, "acima": false, "margem": -3.3}}}, {"liga": "Ligue 2", "n_total": 597, "cells": {"OVER_HT": {"wr": 63.6, "n": 332, "acima": false, "margem": -16.4}, "OVER_FT": {"wr": 76.6, "n": 411, "acima": false, "margem": -3.4}, "UNDER_HT": {"wr": 30.6, "n": 216, "acima": false, "margem": -4.4}, "UNDER_FT": {"wr": 26.5, "n": 245, "acima": true, "margem": 1.5}, "UNDER_25_FT": {"wr": 55.1, "n": 294, "acima": true, "margem": 1.1}}}, {"liga": "Major League Soccer", "n_total": 339, "cells": {"OVER_HT": {"wr": 78.5, "n": 307, "acima": false, "margem": -1.5}, "OVER_FT": {"wr": 83.7, "n": 312, "acima": true, "margem": 3.7}, "UNDER_HT": null, "UNDER_FT": null, "UNDER_25_FT": {"wr": 48.6, "n": 37, "acima": false, "margem": -5.4}}}, {"liga": "Premier League", "n_total": 1104, "cells": {"OVER_HT": {"wr": 75.2, "n": 891, "acima": false, "margem": -4.8}, "OVER_FT": {"wr": 83.9, "n": 975, "acima": true, "margem": 3.9}, "UNDER_HT": {"wr": 35.4, "n": 161, "acima": true, "margem": 0.4}, "UNDER_FT": {"wr": 17.0, "n": 135, "acima": false, "margem": -8.0}, "UNDER_25_FT": {"wr": 42.9, "n": 233, "acima": false, "margem": -11.1}}}, {"liga": "Premiership", "n_total": 462, "cells": {"OVER_HT": {"wr": 77.0, "n": 352, "acima": false, "margem": -3.0}, "OVER_FT": {"wr": 83.2, "n": 388, "acima": true, "margem": 3.2}, "UNDER_HT": {"wr": 20.8, "n": 72, "acima": false, "margem": -14.2}, "UNDER_FT": {"wr": 19.5, "n": 87, "acima": false, "margem": -5.5}, "UNDER_25_FT": {"wr": 46.7, "n": 120, "acima": false, "margem": -7.3}}}, {"liga": "Primeira Liga", "n_total": 889, "cells": {"OVER_HT": {"wr": 71.6, "n": 524, "acima": false, "margem": -8.4}, "OVER_FT": {"wr": 78.4, "n": 763, "acima": false, "margem": -1.6}, "UNDER_HT": {"wr": 37.0, "n": 289, "acima": true, "margem": 2.0}, "UNDER_FT": {"wr": 20.8, "n": 207, "acima": false, "margem": -4.2}, "UNDER_25_FT": {"wr": 49.9, "n": 337, "acima": false, "margem": -4.1}}}, {"liga": "Primera A", "n_total": 358, "cells": {"OVER_HT": {"wr": 61.7, "n": 133, "acima": false, "margem": -18.3}, "OVER_FT": {"wr": 71.9, "n": 167, "acima": false, "margem": -8.1}, "UNDER_HT": {"wr": 32.3, "n": 198, "acima": false, "margem": -2.7}, "UNDER_FT": {"wr": 30.4, "n": 230, "acima": true, "margem": 5.4}, "UNDER_25_FT": {"wr": 55.5, "n": 256, "acima": true, "margem": 1.5}}}, {"liga": "Primera División", "n_total": 188, "cells": {"OVER_HT": {"wr": 68.8, "n": 112, "acima": false, "margem": -11.2}, "OVER_FT": {"wr": 87.2, "n": 148, "acima": true, "margem": 7.2}, "UNDER_HT": {"wr": 34.8, "n": 66, "acima": false, "margem": -0.2}, "UNDER_FT": {"wr": 15.4, "n": 52, "acima": false, "margem": -9.6}, "UNDER_25_FT": {"wr": 49.3, "n": 73, "acima": false, "margem": -4.7}}}, {"liga": "Segunda División", "n_total": 895, "cells": {"OVER_HT": {"wr": 67.1, "n": 426, "acima": false, "margem": -12.9}, "OVER_FT": {"wr": 76.6, "n": 611, "acima": false, "margem": -3.4}, "UNDER_HT": {"wr": 34.3, "n": 399, "acima": false, "margem": -0.7}, "UNDER_FT": {"wr": 25.3, "n": 383, "acima": true, "margem": 0.3}, "UNDER_25_FT": {"wr": 52.1, "n": 518, "acima": false, "margem": -1.9}}}, {"liga": "Serie A", "n_total": 1769, "cells": {"OVER_HT": {"wr": 69.3, "n": 926, "acima": false, "margem": -10.7}, "OVER_FT": {"wr": 77.1, "n": 1196, "acima": false, "margem": -2.9}, "UNDER_HT": {"wr": 31.9, "n": 687, "acima": false, "margem": -3.1}, "UNDER_FT": {"wr": 21.6, "n": 741, "acima": false, "margem": -3.4}, "UNDER_25_FT": {"wr": 54.0, "n": 959, "acima": true, "margem": 0.0}}}, {"liga": "Serie B", "n_total": 1154, "cells": {"OVER_HT": {"wr": 66.7, "n": 630, "acima": false, "margem": -13.3}, "OVER_FT": {"wr": 78.3, "n": 637, "acima": false, "margem": -1.7}, "UNDER_HT": {"wr": 31.4, "n": 456, "acima": false, "margem": -3.6}, "UNDER_FT": {"wr": 25.0, "n": 596, "acima": false, "margem": 0.0}, "UNDER_25_FT": {"wr": 54.3, "n": 736, "acima": true, "margem": 0.3}}}, {"liga": "Super League", "n_total": 438, "cells": {"OVER_HT": {"wr": 73.9, "n": 376, "acima": false, "margem": -6.1}, "OVER_FT": {"wr": 84.2, "n": 411, "acima": true, "margem": 4.2}, "UNDER_HT": {"wr": 25.5, "n": 47, "acima": false, "margem": -9.5}, "UNDER_FT": {"wr": 9.4, "n": 32, "acima": false, "margem": -15.6}, "UNDER_25_FT": {"wr": 36.2, "n": 58, "acima": false, "margem": -17.8}}}, {"liga": "Super League 1", "n_total": 442, "cells": {"OVER_HT": {"wr": 70.6, "n": 214, "acima": false, "margem": -9.4}, "OVER_FT": {"wr": 72.0, "n": 300, "acima": false, "margem": -8.0}, "UNDER_HT": {"wr": 28.7, "n": 181, "acima": false, "margem": -6.3}, "UNDER_FT": {"wr": 21.3, "n": 188, "acima": false, "margem": -3.7}, "UNDER_25_FT": {"wr": 50.6, "n": 267, "acima": false, "margem": -3.4}}}, {"liga": "Superliga", "n_total": 350, "cells": {"OVER_HT": {"wr": 73.7, "n": 308, "acima": false, "margem": -6.3}, "OVER_FT": {"wr": 80.2, "n": 323, "acima": true, "margem": 0.2}, "UNDER_HT": {"wr": 21.2, "n": 33, "acima": false, "margem": -13.8}, "UNDER_FT": null, "UNDER_25_FT": {"wr": 37.8, "n": 45, "acima": false, "margem": -16.2}}}, {"liga": "Süper Lig", "n_total": 938, "cells": {"OVER_HT": {"wr": 70.5, "n": 675, "acima": false, "margem": -9.5}, "OVER_FT": {"wr": 77.7, "n": 791, "acima": false, "margem": -2.3}, "UNDER_HT": {"wr": 25.3, "n": 198, "acima": false, "margem": -9.7}, "UNDER_FT": {"wr": 24.1, "n": 199, "acima": false, "margem": -0.9}, "UNDER_25_FT": {"wr": 49.8, "n": 309, "acima": false, "margem": -4.2}}}], "heatmap": [{"mercado": "OVER_FT", "faixa": "70-79", "banda": "L>=3.0", "wr": 82.2, "n": 2462, "lucro": 2.8, "be": 80, "acima": true}, {"mercado": "UNDER_25_FT", "faixa": "90-100", "banda": "L<=2.0", "wr": 57.5, "n": 1451, "lucro": 6.5, "be": 54, "acima": true}, {"mercado": "OVER_FT", "faixa": "90-100", "banda": "L>=3.0", "wr": 81.9, "n": 2657, "lucro": 2.4, "be": 80, "acima": true}, {"mercado": "UNDER_FT", "faixa": "60-69", "banda": "L 2.0-2.5", "wr": 24.4, "n": 1061, "lucro": -2.4, "be": 25, "acima": false}, {"mercado": "UNDER_HT", "faixa": "80-89", "banda": "L<=2.0", "wr": 41.9, "n": 270, "lucro": 19.7, "be": 35, "acima": true}, {"mercado": "UNDER_FT", "faixa": "70-79", "banda": "L<=2.0", "wr": 29.3, "n": 580, "lucro": 17.2, "be": 25, "acima": true}, {"mercado": "UNDER_FT", "faixa": "80-89", "banda": "L<=2.0", "wr": 25.1, "n": 279, "lucro": 0.4, "be": 25, "acima": true}, {"mercado": "OVER_FT", "faixa": "60-69", "banda": "L>=3.0", "wr": 82.8, "n": 419, "lucro": 3.5, "be": 80, "acima": true}, {"mercado": "OVER_FT", "faixa": "50-59", "banda": "L>=3.0", "wr": 83.4, "n": 187, "lucro": 4.2, "be": 80, "acima": true}, {"mercado": "UNDER_FT", "faixa": "50-59", "banda": "L<=2.0", "wr": 30.8, "n": 91, "lucro": 23.2, "be": 25, "acima": true}, {"mercado": "UNDER_25_FT", "faixa": "90-100", "banda": "L 2.0-2.5", "wr": 54.6, "n": 1041, "lucro": 1.1, "be": 54, "acima": true}, {"mercado": "OVER_FT", "faixa": "60-69", "banda": "L 2.0-2.5", "wr": 76.7, "n": 678, "lucro": -4.1, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "90-100", "banda": "L 2.0-2.5", "wr": 33.8, "n": 195, "lucro": -3.4, "be": 35, "acima": false}, {"mercado": "OVER_FT", "faixa": "80-89", "banda": "L>=3.0", "wr": 81.3, "n": 888, "lucro": 1.6, "be": 80, "acima": true}, {"mercado": "UNDER_FT", "faixa": "60-69", "banda": "L<=2.0", "wr": 27.6, "n": 246, "lucro": 10.4, "be": 25, "acima": true}, {"mercado": "OVER_FT", "faixa": "60-69", "banda": "L 2.5-3.0", "wr": 79.9, "n": 1294, "lucro": -0.1, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "50-59", "banda": "L 2.5-3.0", "wr": 30.7, "n": 593, "lucro": -12.3, "be": 35, "acima": false}, {"mercado": "UNDER_FT", "faixa": "60-69", "banda": "L 2.5-3.0", "wr": 25.7, "n": 222, "lucro": 2.8, "be": 25, "acima": true}, {"mercado": "UNDER_25_FT", "faixa": "60-69", "banda": "L 2.0-2.5", "wr": 53.5, "n": 1075, "lucro": -0.9, "be": 54, "acima": false}, {"mercado": "OVER_FT", "faixa": "70-79", "banda": "L 2.5-3.0", "wr": 77.8, "n": 1830, "lucro": -2.7, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "60-69", "banda": "L 2.0-2.5", "wr": 31.0, "n": 603, "lucro": -11.4, "be": 35, "acima": false}, {"mercado": "OVER_FT", "faixa": "80-89", "banda": "L 2.0-2.5", "wr": 79.3, "n": 116, "lucro": -0.9, "be": 80, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "70-79", "banda": "L 2.0-2.5", "wr": 51.6, "n": 1466, "lucro": -4.4, "be": 54, "acima": false}, {"mercado": "UNDER_HT", "faixa": "80-89", "banda": "L 2.0-2.5", "wr": 32.4, "n": 256, "lucro": -7.4, "be": 35, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "50-59", "banda": "L 2.0-2.5", "wr": 53.4, "n": 395, "lucro": -1.1, "be": 54, "acima": false}, {"mercado": "OVER_FT", "faixa": "90-100", "banda": "L 2.5-3.0", "wr": 78.3, "n": 903, "lucro": -2.1, "be": 80, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "80-89", "banda": "L 2.0-2.5", "wr": 50.1, "n": 774, "lucro": -7.2, "be": 54, "acima": false}, {"mercado": "UNDER_HT", "faixa": "90-100", "banda": "L<=2.0", "wr": 34.7, "n": 392, "lucro": -0.9, "be": 35, "acima": false}, {"mercado": "UNDER_HT", "faixa": "50-59", "banda": "L<=2.0", "wr": 32.5, "n": 77, "lucro": -7.1, "be": 35, "acima": false}, {"mercado": "UNDER_FT", "faixa": "70-79", "banda": "L 2.0-2.5", "wr": 21.2, "n": 693, "lucro": -15.2, "be": 25, "acima": false}, {"mercado": "UNDER_FT", "faixa": "90-100", "banda": "L<=2.0", "wr": 24.5, "n": 286, "lucro": -2.0, "be": 25, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "60-69", "banda": "L 2.5-3.0", "wr": 48.6, "n": 609, "lucro": -10.0, "be": 54, "acima": false}, {"mercado": "UNDER_FT", "faixa": "80-89", "banda": "L 2.0-2.5", "wr": 23.5, "n": 238, "lucro": -6.0, "be": 25, "acima": false}, {"mercado": "OVER_FT", "faixa": "50-59", "banda": "L 2.5-3.0", "wr": 77.9, "n": 1439, "lucro": -2.6, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "60-69", "banda": "L<=2.0", "wr": 32.1, "n": 215, "lucro": -8.3, "be": 35, "acima": false}, {"mercado": "UNDER_HT", "faixa": "70-79", "banda": "L<=2.0", "wr": 34.0, "n": 527, "lucro": -2.9, "be": 35, "acima": false}, {"mercado": "UNDER_FT", "faixa": "50-59", "banda": "L 2.0-2.5", "wr": 23.5, "n": 1393, "lucro": -6.0, "be": 25, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "50-59", "banda": "L 2.5-3.0", "wr": 46.6, "n": 787, "lucro": -13.7, "be": 54, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "70-79", "banda": "L 2.5-3.0", "wr": 51.7, "n": 147, "lucro": -4.3, "be": 54, "acima": false}, {"mercado": "OVER_FT", "faixa": "60-69", "banda": "L<=2.0", "wr": 76.9, "n": 78, "lucro": -3.9, "be": 80, "acima": false}, {"mercado": "UNDER_FT", "faixa": "90-100", "banda": "L 2.0-2.5", "wr": 21.6, "n": 74, "lucro": -13.6, "be": 25, "acima": false}, {"mercado": "UNDER_HT", "faixa": "70-79", "banda": "L 2.0-2.5", "wr": 31.6, "n": 785, "lucro": -9.7, "be": 35, "acima": false}, {"mercado": "OVER_FT", "faixa": "70-79", "banda": "L 2.0-2.5", "wr": 77.0, "n": 343, "lucro": -3.7, "be": 80, "acima": false}, {"mercado": "UNDER_FT", "faixa": "50-59", "banda": "L 2.5-3.0", "wr": 21.3, "n": 511, "lucro": -14.8, "be": 25, "acima": false}, {"mercado": "OVER_FT", "faixa": "80-89", "banda": "L 2.5-3.0", "wr": 77.7, "n": 1060, "lucro": -2.9, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "50-59", "banda": "L 2.0-2.5", "wr": 32.5, "n": 1313, "lucro": -7.1, "be": 35, "acima": false}, {"mercado": "OVER_HT", "faixa": "50-59", "banda": "L 2.0-2.5", "wr": 69.3, "n": 761, "lucro": -13.4, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "80-89", "banda": "L 2.5-3.0", "wr": 70.5, "n": 757, "lucro": -11.9, "be": 80, "acima": false}, {"mercado": "UNDER_FT", "faixa": "70-79", "banda": "L 2.5-3.0", "wr": 19.0, "n": 79, "lucro": -24.0, "be": 25, "acima": false}, {"mercado": "UNDER_25_FT", "faixa": "80-89", "banda": "L<=2.0", "wr": 40.7, "n": 27, "lucro": -24.6, "be": 54, "acima": false}, {"mercado": "OVER_HT", "faixa": "60-69", "banda": "L 2.0-2.5", "wr": 72.4, "n": 199, "lucro": -9.5, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "70-79", "banda": "L 2.5-3.0", "wr": 27.8, "n": 108, "lucro": -20.6, "be": 35, "acima": false}, {"mercado": "OVER_FT", "faixa": "50-59", "banda": "L 2.0-2.5", "wr": 74.9, "n": 1116, "lucro": -6.4, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "60-69", "banda": "L>=3.0", "wr": 75.2, "n": 1505, "lucro": -6.0, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "90-100", "banda": "L>=3.0", "wr": 74.7, "n": 1012, "lucro": -6.6, "be": 80, "acima": false}, {"mercado": "OVER_FT", "faixa": "50-59", "banda": "L<=2.0", "wr": 71.8, "n": 156, "lucro": -10.3, "be": 80, "acima": false}, {"mercado": "UNDER_HT", "faixa": "60-69", "banda": "L 2.5-3.0", "wr": 25.5, "n": 157, "lucro": -27.1, "be": 35, "acima": false}, {"mercado": "OVER_HT", "faixa": "80-89", "banda": "L>=3.0", "wr": 73.3, "n": 2298, "lucro": -8.4, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "60-69", "banda": "L 2.5-3.0", "wr": 72.2, "n": 1111, "lucro": -9.8, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "50-59", "banda": "L<=2.0", "wr": 53.8, "n": 52, "lucro": -32.8, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "50-59", "banda": "L 2.5-3.0", "wr": 70.0, "n": 2232, "lucro": -12.5, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "50-59", "banda": "L>=3.0", "wr": 71.1, "n": 726, "lucro": -11.1, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "70-79", "banda": "L 2.0-2.5", "wr": 57.1, "n": 70, "lucro": -28.6, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "70-79", "banda": "L 2.5-3.0", "wr": 71.5, "n": 1134, "lucro": -10.6, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "70-79", "banda": "L>=3.0", "wr": 74.7, "n": 1170, "lucro": -6.6, "be": 80, "acima": false}, {"mercado": "OVER_HT", "faixa": "90-100", "banda": "L 2.5-3.0", "wr": 65.2, "n": 351, "lucro": -18.5, "be": 80, "acima": false}], "stats": {"solidos_validados": 12, "promissores": 26, "total_bolsoes": 61}}, "jogos": [{"id": 1180, "fixture_id": 1546279, "jogo": "Milford FC vs Magesi", "liga": "Premier Soccer League", "pais": "INT", "kickoff": "10:00", "recom": "EVITAR", "scoreRec": 34, "scoreOver_HT": 34, "scoreUnder_HT": 0, "scoreOver_FT": 15, "scoreUnder_FT": 0, "scoreUnder_25": 0, "lambda": 0, "lambdaRecente": 0, "h2hN": 2, "h2hMedia": 3.0, "probCalib": 0, "oddJusta": 0, "oddBetfair": 0, "edge": 0, "ev": 0, "ultimas": "—————", "ultimasCasa": "—————", "ultimasFora": "UUUUU", "h2hVisual": "UO———", "csCasa": 0, "csFora": 27.0, "formaH": 0, "formaA": 0.8, "pctGolsHT": 48.8, "pctGolsST": 0, "under25Pct": 0, "tier": "none", "edgeScore": {"nivel": "BAIXA", "mercado": "OVER_HT", "mercado_lbl": "Over HT", "wr": null, "odd": null, "lucro": null, "razoes": [], "todos": [{"nivel": "BAIXA", "wr": null, "mercado": "OVER_HT", "mercado_lbl": "Over HT", "acionavel": false}, {"nivel": "BAIXA", "wr": null, "mercado": "OVER_FT", "mercado_lbl": "Over FT", "acionavel": false}, {"nivel": "BAIXA", "wr": null, "mercado": "UNDER_HT", "mercado_lbl": "Under HT", "acionavel": false}, {"nivel": "BAIXA", "wr": null, "mercado": "UNDER_FT", "mercado_lbl": "Under FT", "acionavel": false}, {"nivel": "BAIXA", "wr": null, "mercado": "UNDER_25_FT", "mercado_lbl": "Under 2.5", "acionavel": false}]}}, {"id": 1179, "fixture_id": 1540061, "jogo": "San Lorenzo vs Deportivo Riestra", "liga": "Copa Argentina", "pais": "INT", "kickoff": "21:10", "recom": "UNDER_HT", "scoreRec": 75, "scoreOver_HT": 12, "scoreUnder_HT": 75, "scoreOver_FT": 32, "scoreUnder_FT": 100, "scoreUnder_25": 100, "lambda": 1.84, "lambdaRecente": 1.8, "h2hN": 4, "h2hMedia": 1.0, "probCalib": 36.0, "oddJusta": 2.78, "oddBetfair": 0, "edge": 0, "ev": 0, "ultimas": "UOUUO", "ultimasCasa": "UOUUO", "ultimasFora": "UUUUU", "h2hVisual": "UUUU—", "csCasa": 50.0, "csFora": 25.0, "formaH": 2.6, "formaA": 1.0, "pctGolsHT": 47.6, "pctGolsST": 49.3, "under25Pct": 80.0, "tier": "none", "edgeScore": {"nivel": "ALTA", "mercado": "UNDER_25_FT", "mercado_lbl": "Under 2.5", "wr": 61.5, "odd": 1.63, "lucro": 13.89, "razoes": ["score 90-100: 56%", "λ<2.0: +5pp"], "todos": [{"nivel": "ALTA", "mercado": "UNDER_25_FT", "wr": 61.5, "odd": 1.63, "lucro": 13.89, "margem": 7.5, "razoes": ["score 90-100: 56%", "λ<2.0: +5pp"], "mercado_lbl": "Under 2.5", "acionavel": true}, {"nivel": "ALTA", "mercado": "UNDER_FT", "wr": 28.1, "odd": 3.56, "lucro": 12.4, "margem": 3.1, "razoes": ["score 90-100: 24%", "λ<2.0: +4pp", "cs≥35: +0pp"], "mercado_lbl": "Under FT", "acionavel": true}, {"nivel": "BAIXA", "mercado": "UNDER_HT", "wr": 34.6, "odd": 2.89, "lucro": -1.14, "margem": -0.4, "razoes": ["score 70-80: 32%", "λ<2.0: +3pp", "cs≥35: -1pp"], "mercado_lbl": "Under HT", "acionavel": true}, {"nivel": "BAIXA", "wr": null, "mercado": "OVER_HT", "mercado_lbl": "Over HT", "acionavel": false}, {"nivel": "BAIXA", "wr": null, "mercado": "OVER_FT", "mercado_lbl": "Over FT", "acionavel": false}]}}], "top5": [{"rank": 1, "jogo": "San Lorenzo vs Deportivo Riestra", "mercado": "UNDER_HT", "score": 75, "oddJusta": 2.78, "oddBetfair": 0, "ev": 0, "kickoff": "21:10", "color": "copper"}], "combosOuro": [], "combosLixo": [], "critica": {"n_total": 677, "n_acionavel": 669, "concentrar_banca": [{"mercado": "UNDER_25_FT", "faixa": "90-100", "wr": 71.0, "n": 69, "acertos": 49, "odd_justa": 1.41, "edge_be": 17.0, "acima_be": true, "prioridade": 1022.9}, {"mercado": "UNDER_25_FT", "faixa": "80-90", "wr": 70.0, "n": 50, "acertos": 35, "odd_justa": 1.43, "edge_be": 16.0, "acima_be": true, "prioridade": 1020.0}, {"mercado": "UNDER_FT", "faixa": "90-100", "wr": 42.9, "n": 14, "acertos": 6, "odd_justa": 2.33, "edge_be": 17.9, "acima_be": true, "prioridade": 1019.2}, {"mercado": "UNDER_FT", "faixa": "80-90", "wr": 37.0, "n": 27, "acertos": 10, "odd_justa": 2.7, "edge_be": 12.0, "acima_be": true, "prioridade": 1013.6}, {"mercado": "UNDER_HT", "faixa": "60-70", "wr": 43.1, "n": 58, "acertos": 25, "odd_justa": 2.32, "edge_be": 8.1, "acima_be": true, "prioridade": 1010.4}, {"mercado": "UNDER_HT", "faixa": "80-90", "wr": 42.3, "n": 26, "acertos": 11, "odd_justa": 2.36, "edge_be": 7.3, "acima_be": true, "prioridade": 1008.2}, {"mercado": "UNDER_25_FT", "faixa": "70-80", "wr": 59.7, "n": 62, "acertos": 37, "odd_justa": 1.68, "edge_be": 5.7, "acima_be": true, "prioridade": 1007.5}, {"mercado": "OVER_FT", "faixa": "90-100", "wr": 82.1, "n": 145, "acertos": 119, "odd_justa": 1.22, "edge_be": 2.1, "acima_be": true, "prioridade": 1003.1}], "wr_recom": {"n": 669, "acertos": 437, "wr": 65.3}, "wr_mercado": {"OVER_HT": {"n": 414, "acertos": 310, "wr": 74.9, "odd_media": 1.34, "n_todos": 677, "acertos_todos": 480, "wr_todos": 70.9}, "OVER_FT": {"n": 553, "acertos": 435, "wr": 78.7, "odd_media": 1.27, "n_todos": 677, "acertos_todos": 526, "wr_todos": 77.7}, "UNDER_HT": {"n": 199, "acertos": 75, "wr": 37.7, "odd_media": 2.65, "n_todos": 677, "acertos_todos": 197, "wr_todos": 29.1}, "UNDER_FT": {"n": 215, "acertos": 56, "wr": 26.0, "odd_media": 3.85, "n_todos": 677, "acertos_todos": 151, "wr_todos": 22.3}, "UNDER_25_FT": {"n": 290, "acertos": 180, "wr": 62.1, "odd_media": 1.61, "n_todos": 677, "acertos_todos": 333, "wr_todos": 49.2}}, "wr_por_faixa": {"OVER_HT": {"50-60": {"n": 101, "acertos": 71, "wr": 70.3, "odd_media": 1.42}, "60-70": {"n": 106, "acertos": 80, "wr": 75.5, "odd_media": 1.32}, "70-80": {"n": 116, "acertos": 86, "wr": 74.1, "odd_media": 1.35}, "80-90": {"n": 69, "acertos": 56, "wr": 81.2, "odd_media": 1.23}, "90-100": {"n": 22, "acertos": 17, "wr": 77.3, "odd_media": 1.29}}, "OVER_FT": {"50-60": {"n": 72, "acertos": 51, "wr": 70.8, "odd_media": 1.41}, "60-70": {"n": 105, "acertos": 86, "wr": 81.9, "odd_media": 1.22}, "70-80": {"n": 71, "acertos": 58, "wr": 81.7, "odd_media": 1.22}, "80-90": {"n": 160, "acertos": 121, "wr": 75.6, "odd_media": 1.32}, "90-100": {"n": 145, "acertos": 119, "wr": 82.1, "odd_media": 1.22}}, "UNDER_HT": {"50-60": {"n": 75, "acertos": 25, "wr": 33.3, "odd_media": 3.0}, "60-70": {"n": 58, "acertos": 25, "wr": 43.1, "odd_media": 2.32}, "70-80": {"n": 35, "acertos": 13, "wr": 37.1, "odd_media": 2.7}, "80-90": {"n": 26, "acertos": 11, "wr": 42.3, "odd_media": 2.36}, "90-100": {"n": 5, "acertos": 1, "wr": 20.0, "odd_media": 5.0}}, "UNDER_FT": {"50-60": {"n": 76, "acertos": 19, "wr": 25.0, "odd_media": 4.0}, "60-70": {"n": 54, "acertos": 12, "wr": 22.2, "odd_media": 4.5}, "70-80": {"n": 44, "acertos": 9, "wr": 20.5, "odd_media": 4.88}, "80-90": {"n": 27, "acertos": 10, "wr": 37.0, "odd_media": 2.7}, "90-100": {"n": 14, "acertos": 6, "wr": 42.9, "odd_media": 2.33}}, "UNDER_25_FT": {"50-60": {"n": 38, "acertos": 20, "wr": 52.6, "odd_media": 1.9}, "60-70": {"n": 71, "acertos": 39, "wr": 54.9, "odd_media": 1.82}, "70-80": {"n": 62, "acertos": 37, "wr": 59.7, "odd_media": 1.68}, "80-90": {"n": 50, "acertos": 35, "wr": 70.0, "odd_media": 1.43}, "90-100": {"n": 69, "acertos": 49, "wr": 71.0, "odd_media": 1.41}}}, "wr_por_lambda": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 28, "wr": 45.9}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 102, "wr": 52.8}, "médio_alto": {"faixa": "2.5-3.0", "n": 218, "acertos": 153, "wr": 70.2}, "alto": {"faixa": "3.0-∞", "n": 197, "acertos": 154, "wr": 78.2}}, "wr_lambda_mercado": {"OVER_HT": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 36, "wr": 59.0}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 124, "wr": 64.2}, "médio_alto": {"faixa": "2.5-3.0", "n": 222, "acertos": 162, "wr": 73.0}, "alto": {"faixa": "3.0-∞", "n": 198, "acertos": 155, "wr": 78.3}}, "OVER_FT": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 42, "wr": 68.9}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 148, "wr": 76.7}, "médio_alto": {"faixa": "2.5-3.0", "n": 222, "acertos": 176, "wr": 79.3}, "alto": {"faixa": "3.0-∞", "n": 198, "acertos": 158, "wr": 79.8}}, "UNDER_HT": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 25, "wr": 41.0}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 69, "wr": 35.8}, "médio_alto": {"faixa": "2.5-3.0", "n": 222, "acertos": 60, "wr": 27.0}, "alto": {"faixa": "3.0-∞", "n": 198, "acertos": 43, "wr": 21.7}}, "UNDER_FT": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 19, "wr": 31.1}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 45, "wr": 23.3}, "médio_alto": {"faixa": "2.5-3.0", "n": 222, "acertos": 46, "wr": 20.7}, "alto": {"faixa": "3.0-∞", "n": 198, "acertos": 40, "wr": 20.2}}, "UNDER_25_FT": {"baixo": {"faixa": "0-2.0", "n": 61, "acertos": 40, "wr": 65.6}, "médio_baixo": {"faixa": "2.0-2.5", "n": 193, "acertos": 123, "wr": 63.7}, "médio_alto": {"faixa": "2.5-3.0", "n": 222, "acertos": 108, "wr": 48.6}, "alto": {"faixa": "3.0-∞", "n": 198, "acertos": 60, "wr": 30.3}}}, "wr_por_dia": {"Segunda": {"n": 33, "acertos": 20, "wr": 60.6}, "Terça": {"n": 72, "acertos": 39, "wr": 54.2}, "Quarta": {"n": 101, "acertos": 68, "wr": 67.3}, "Quinta": {"n": 46, "acertos": 31, "wr": 67.4}, "Sexta": {"n": 48, "acertos": 31, "wr": 64.6}, "Sábado": {"n": 174, "acertos": 116, "wr": 66.7}, "Domingo": {"n": 195, "acertos": 132, "wr": 67.7}}, "wr_liga": [{"liga": "Major League Soccer", "n": 30, "acertos": 26, "wr": 86.7}, {"liga": "K League 2", "n": 11, "acertos": 9, "wr": 81.8}, {"liga": "Ekstraklasa", "n": 20, "acertos": 16, "wr": 80.0}, {"liga": "Pro League", "n": 20, "acertos": 16, "wr": 80.0}, {"liga": "Jupiler Pro League", "n": 20, "acertos": 16, "wr": 80.0}, {"liga": "Bundesliga", "n": 15, "acertos": 12, "wr": 80.0}, {"liga": "Erovnuli Liga", "n": 15, "acertos": 12, "wr": 80.0}, {"liga": "Allsvenskan", "n": 17, "acertos": 13, "wr": 76.5}, {"liga": "J1 League", "n": 17, "acertos": 13, "wr": 76.5}, {"liga": "Ligue 1", "n": 11, "acertos": 8, "wr": 72.7}, {"liga": "Premier League", "n": 21, "acertos": 15, "wr": 71.4}, {"liga": "La Liga", "n": 30, "acertos": 20, "wr": 66.7}, {"liga": "Primera División", "n": 24, "acertos": 16, "wr": 66.7}, {"liga": "Eredivisie", "n": 12, "acertos": 8, "wr": 66.7}, {"liga": "Super League", "n": 28, "acertos": 18, "wr": 64.3}], "ligas_pior": [{"liga": "Primera División - Apertura", "n": 10, "acertos": 2, "wr": 20.0}, {"liga": "Super League 1", "n": 10, "acertos": 4, "wr": 40.0}], "h2h_split": {"sem_h2h": {"n": 113, "wr": 62.8, "acertos": 71}, "com_h2h": {"n": 556, "wr": 65.8, "acertos": 366}}, "filtro_geral": [{"var": "Gols esperados (λ)", "wr_baixo": 48.9, "wr_alto": 78.0, "spread": 29.1, "abs_spread": 29.1, "n": 669, "corte_alto": 2.92, "corte_baixo": 2.42}, {"var": "λ recente", "wr_baixo": 50.5, "wr_alto": 77.0, "spread": 26.5, "abs_spread": 26.5, "n": 667, "corte_alto": 3.0, "corte_baixo": 2.4}, {"var": "Forma combinada", "wr_baixo": 50.7, "wr_alto": 76.9, "spread": 26.2, "abs_spread": 26.200000000000003, "n": 665, "corte_alto": 3.0, "corte_baixo": 2.4}, {"var": "Under 2.5 últ.5", "wr_baixo": 76.0, "wr_alto": 56.1, "spread": -19.9, "abs_spread": 19.9, "n": 665, "corte_alto": 60.0, "corte_baixo": 40.0}, {"var": "Clean sheet fora", "wr_baixo": 71.7, "wr_alto": 52.5, "spread": -19.2, "abs_spread": 19.200000000000003, "n": 669, "corte_alto": 26.3, "corte_baixo": 15.8}, {"var": "H2H média de gols", "wr_baixo": 59.2, "wr_alto": 72.9, "spread": 13.7, "abs_spread": 13.700000000000003, "n": 654, "corte_alto": 3.0, "corte_baixo": 2.2}, {"var": "Clean sheet casa", "wr_baixo": 68.2, "wr_alto": 61.4, "spread": -6.8, "abs_spread": 6.800000000000004, "n": 669, "corte_alto": 37.5, "corte_baixo": 25.0}, {"var": "% gols 1º tempo", "wr_baixo": 64.0, "wr_alto": 65.3, "spread": 1.3, "abs_spread": 1.2999999999999972, "n": 667, "corte_alto": 46.6, "corte_baixo": 42.8}, {"var": "% gols 2º tempo", "wr_baixo": 64.4, "wr_alto": 65.3, "spread": 0.9, "abs_spread": 0.8999999999999915, "n": 666, "corte_alto": 57.1, "corte_baixo": 53.0}], "preditores_mercado": {"OVER_HT": [{"var": "% gols 2º tempo", "wr_baixo": 68.6, "wr_alto": 81.8, "spread": 13.2, "abs_spread": 13.200000000000003, "n": 413, "corte_alto": 56.7, "corte_baixo": 52.6}, {"var": "H2H média de gols", "wr_baixo": 69.6, "wr_alto": 80.7, "spread": 11.1, "abs_spread": 11.100000000000009, "n": 406, "corte_alto": 3.2, "corte_baixo": 2.2}, {"var": "% gols 1º tempo", "wr_baixo": 80.3, "wr_alto": 70.8, "spread": -9.5, "abs_spread": 9.5, "n": 413, "corte_alto": 47.2, "corte_baixo": 43.1}], "OVER_FT": [{"var": "H2H média de gols", "wr_baixo": 72.2, "wr_alto": 86.7, "spread": 14.5, "abs_spread": 14.5, "n": 540, "corte_alto": 3.0, "corte_baixo": 2.2}, {"var": "λ recente", "wr_baixo": 74.3, "wr_alto": 82.0, "spread": 7.7, "abs_spread": 7.700000000000003, "n": 551, "corte_alto": 3.1, "corte_baixo": 2.5}, {"var": "Forma combinada", "wr_baixo": 75.4, "wr_alto": 79.8, "spread": 4.4, "abs_spread": 4.3999999999999915, "n": 549, "corte_alto": 3.1, "corte_baixo": 2.5}], "UNDER_HT": [{"var": "% gols 2º tempo", "wr_baixo": 47.7, "wr_alto": 33.8, "spread": -13.9, "abs_spread": 13.900000000000006, "n": 197, "corte_alto": 58.2, "corte_baixo": 54.4}, {"var": "λ recente", "wr_baixo": 39.4, "wr_alto": 30.3, "spread": -9.1, "abs_spread": 9.099999999999998, "n": 199, "corte_alto": 2.2, "corte_baixo": 1.9}, {"var": "Forma combinada", "wr_baixo": 39.4, "wr_alto": 30.3, "spread": -9.1, "abs_spread": 9.099999999999998, "n": 198, "corte_alto": 2.3, "corte_baixo": 1.9}], "UNDER_FT": [{"var": "H2H média de gols", "wr_baixo": 35.7, "wr_alto": 18.6, "spread": -17.1, "abs_spread": 17.1, "n": 210, "corte_alto": 2.75, "corte_baixo": 2.0}, {"var": "λ recente", "wr_baixo": 35.2, "wr_alto": 18.3, "spread": -16.9, "abs_spread": 16.900000000000002, "n": 213, "corte_alto": 2.3, "corte_baixo": 1.94}, {"var": "Forma combinada", "wr_baixo": 33.8, "wr_alto": 19.7, "spread": -14.1, "abs_spread": 14.099999999999998, "n": 215, "corte_alto": 2.3, "corte_baixo": 2.0}], "UNDER_25_FT": [{"var": "H2H média de gols", "wr_baixo": 69.9, "wr_alto": 46.2, "spread": -23.7, "abs_spread": 23.700000000000003, "n": 280, "corte_alto": 2.8, "corte_baixo": 2.0}, {"var": "λ recente", "wr_baixo": 71.9, "wr_alto": 53.1, "spread": -18.8, "abs_spread": 18.800000000000004, "n": 290, "corte_alto": 2.3, "corte_baixo": 2.0}, {"var": "Gols esperados (λ)", "wr_baixo": 69.8, "wr_alto": 52.1, "spread": -17.7, "abs_spread": 17.699999999999996, "n": 290, "corte_alto": 2.38, "corte_baixo": 2.18}]}, "melhor_preditor": {"var": "Gols esperados (λ)", "wr_baixo": 48.9, "wr_alto": 78.0, "spread": 29.1, "abs_spread": 29.1, "n": 669, "corte_alto": 2.92, "corte_baixo": 2.42}, "erros_recentes": [{"jogo": "Atletico-MG vs Puerto Cabello", "liga": "CONMEBOL Sudamericana", "data": "2026-05-27", "recom": "OVER_HT", "score": 59, "lambda": 2.58, "h2h_n": 1, "ht_total": 0, "ft_total": 1}, {"jogo": "RB Bragantino vs Carabobo FC", "liga": "CONMEBOL Sudamericana", "data": "2026-05-27", "recom": "OVER_HT", "score": 91, "lambda": 2.88, "h2h_n": 1, "ht_total": 0, "ft_total": 2}, {"jogo": "Cienciano vs Juventud", "liga": "CONMEBOL Sudamericana", "data": "2026-05-27", "recom": "UNDER_HT", "score": 85, "lambda": 1.82, "h2h_n": 1, "ht_total": 1, "ft_total": 2}, {"jogo": "Olimpia vs A. Italiano", "liga": "CONMEBOL Sudamericana", "data": "2026-05-27", "recom": "OVER_HT", "score": 75, "lambda": 3.02, "h2h_n": 1, "ht_total": 0, "ft_total": 4}, {"jogo": "River Plate vs Blooming", "liga": "CONMEBOL Sudamericana", "data": "2026-05-27", "recom": "OVER_HT", "score": 84, "lambda": 3.13, "h2h_n": 1, "ht_total": 0, "ft_total": 3}, {"jogo": "Corinthians vs Platense", "liga": "CONMEBOL Libertadores", "data": "2026-05-27", "recom": "UNDER_HT", "score": 71, "lambda": 1.8, "h2h_n": 1, "ht_total": 1, "ft_total": 2}, {"jogo": "Penarol vs Santa Fe", "liga": "CONMEBOL Libertadores", "data": "2026-05-27", "recom": "UNDER_HT", "score": 59, "lambda": 2.36, "h2h_n": 1, "ht_total": 1, "ft_total": 1}, {"jogo": "Santos vs Deportivo Cuenca", "liga": "CONMEBOL Sudamericana", "data": "2026-05-26", "recom": "UNDER_HT", "score": 74, "lambda": 2.22, "h2h_n": 1, "ht_total": 1, "ft_total": 3}, {"jogo": "Sao Paulo vs Boston River", "liga": "CONMEBOL Sudamericana", "data": "2026-05-26", "recom": "OVER_FT", "score": 75, "lambda": 2.64, "h2h_n": 1, "ht_total": 2, "ft_total": 2}, {"jogo": "Flamengo vs Cusco", "liga": "CONMEBOL Libertadores", "data": "2026-05-26", "recom": "OVER_HT", "score": 84, "lambda": 3.36, "h2h_n": 1, "ht_total": 0, "ft_total": 3}], "streak": {"n": 4, "tipo": "loss"}, "ev_realizado": 0, "insights": [{"tipo": "faixa", "level": "destaque", "msg": "Over HT score 80-90 tem WR EXCELENTE de 81.2% em 69 jogos — sweet spot."}, {"tipo": "faixa", "level": "destaque", "msg": "Over FT score 90-100 tem WR EXCELENTE de 82.1% em 145 jogos — sweet spot."}, {"tipo": "faixa", "level": "destaque", "msg": "Under 2.5 score 90-100 tem WR EXCELENTE de 71.0% em 69 jogos — sweet spot."}, {"tipo": "mercado_bom", "level": "destaque", "msg": "Under HT performa MUITO bem: WR 37.7% (+12.7pp vs literatura) em 199 jogos."}, {"tipo": "mercado_ruim", "level": "alerta", "msg": "Under FT WR 26.0% (lift -4.0pp vs literatura) em 215 jogos — modelo está com dificuldade nesse mercado."}, {"tipo": "mercado_bom", "level": "destaque", "msg": "Under 2.5 performa MUITO bem: WR 62.1% (+10.1pp vs literatura) em 290 jogos."}, {"tipo": "liga_top", "level": "destaque", "msg": "Liga Major League Soccer é seu melhor mercado: 86.7% WR em 30 jogos — priorize."}, {"tipo": "liga_ruim", "level": "alerta", "msg": "Liga Primera División - Apertura WR 20.0% em 10 jogos — considere evitar."}, {"tipo": "filtro", "level": "info", "msg": "'Gols esperados (λ)' é um bom filtro: quando alto, você acerta 78.0% (vs 48.9% no oposto) — diferença de 29pp em 669 jogos."}, {"tipo": "filtro", "level": "info", "msg": "'λ recente' é um bom filtro: quando alto, você acerta 77.0% (vs 50.5% no oposto) — diferença de 26pp em 667 jogos."}], "periodo_dias": 30}, "curva": {"OVER_HT": {"50": 0.718, "60": 0.754, "70": 0.75, "80": 0.82, "90": 0.782, "100": 0.812}, "OVER_FT": {"50": 0.747, "60": 0.809, "70": 0.815, "80": 0.759, "90": 0.806, "100": 0.8360000000000001}, "UNDER_HT": {"50": 0.315, "60": 0.377, "70": 0.342, "80": 0.378, "90": 0.297, "100": 0.32699999999999996}, "UNDER_FT": {"50": 0.253, "60": 0.205, "70": 0.233, "80": 0.354, "90": 0.326, "100": 0.356}, "UNDER_25_FT": {"50": 0.536, "60": 0.533, "70": 0.573, "80": 0.669, "90": 0.663, "100": 0.6930000000000001}}, "stats": {"evPos": 0, "evTotal": 0, "avgScore": 54.5, "elite": 0, "total": 2}, "diasPre": 0, "geradoEm": "03/06/2026 11:32:05", "geradoEmISO": "2026-06-03T11:32:05.130612-03:00"}</script>
+
+<script>
+const DADOS = JSON.parse(document.getElementById('dados-json').textContent);
+
+const MERCADO_LABEL = {
+  OVER_HT: 'Over HT', OVER_FT: 'Over FT', UNDER_HT: 'Under HT',
+  UNDER_FT: 'Under FT', UNDER_25_FT: 'Under 2.5', EVITAR: 'Evitar', MONITORAR: 'Monitorar',
+};
+const MERCADO_GLYPH = {
+  OVER_HT: '◐', OVER_FT: '●', UNDER_HT: '◑',
+  UNDER_FT: '○', UNDER_25_FT: '◯', EVITAR: '×', MONITORAR: '−',
+};
+
+// ES_JS_START
+const EDGE_ORDEM = {ALTA:0, 'MÉDIA':1, BAIXA:2};
+// selo minimalista: 1 linha fina (o banner do topo é o destaque)
+function edgeSelo(j) {
+  if (!j.edgeScore || !j.edgeScore.nivel || j.edgeScore.wr == null) return '';
+  const e = j.edgeScore;
+  const aviso = (j.recom === 'OVER_HT' && e.mercado !== 'OVER_HT') ? ' · ⚡ Over HT só ao vivo' : '';
+  return `<div class="edge-mini edge-${e.nivel}">
+    <span class="em-mkt">${MERCADO_LABEL[e.mercado]||e.mercado}</span>
+    <span class="em-sep">·</span>
+    <span class="em-wr">WR ${e.wr}%</span>
+    <span class="em-sep">·</span>
+    <span class="em-odd">odd ${e.odd||'—'}</span>
+    <span class="em-lucro">${e.lucro>=0?'+':''}R$${e.lucro}</span>
+    <span class="em-aviso">${aviso}</span>
+  </div>`;
+}
+function calcOddReal(el){
+  const wr = parseFloat(el.dataset.wr);
+  const odd = parseFloat((el.value||'').replace(',','.'));
+  const out = document.getElementById(el.dataset.out);
+  if(!out) return;
+  if(!odd || odd<=1 || isNaN(wr)){ out.innerHTML = '<span class="cor-dim">digite a odd</span>'; return; }
+  const c = 0.06;
+  const be = 1/(1+(odd-1)*(1-c))*100;
+  const ev = (wr/100)*((odd-1)*(1-c)*100) - (1-wr/100)*100;
+  const oddMin = 1 + (1/(wr/100) - 1)/(1-c);
+  const vale = wr > be;
+  out.innerHTML = '<span class="'+(vale?'cor-verde':'cor-copper')+'">'
+    + (vale?'✓ TEM VALOR':'✗ sem valor') + ' · EV ' + (ev>=0?'+':'') + 'R$' + ev.toFixed(2) + '/100'
+    + '</span> <span class="cor-dim">· BE ' + be.toFixed(0) + '% · odd min ' + oddMin.toFixed(2) + '</span>';
+}
+function edgeModal(j) {
+  if (!j.edgeScore || !j.edgeScore.todos || !j.edgeScore.todos.length) return '';
+  const rows = j.edgeScore.todos.map(c => {
+    const mkt = MERCADO_LABEL[c.mercado] || c.mercado;
+    const naoAcion = (c.acionavel === false);
+    const wrTxt = (c.wr==null) ? '—' : c.wr + '%';
+    const outId = 'oddres-' + (j.id||'x') + '-' + (c.mercado||'m');
+    const wrVal = (c.wr==null) ? '' : c.wr;
+    const calcHtml = naoAcion ? '' :
+      '<div class="emr-calc"><input type="text" class="odd-input" placeholder="odd real" data-wr="'+wrVal+'" data-out="'+outId+'" oninput="calcOddReal(this)"><div class="odd-res" id="'+outId+'"><span class="cor-dim">digite a odd da Betfair</span></div></div>';
+    return `<div class="edge-modal-row lvl-${c.nivel} ${naoAcion?'nao-acion':''}">
+      <div class="emr-top"><span class="emr-mkt">${mkt}</span>
+      <span class="emr-info">${naoAcion ? 'score baixo' : (c.nivel + ' · WR ' + wrTxt + (c.odd ? ' · odd justa ' + c.odd : ''))}</span></div>
+      ${calcHtml}
+    </div>`;
+  }).join('');
+  return `<div class="modal-section"><div class="modal-section-title">◉ Edge Score — 5 mercados</div>
+    <div class="edge-modal-grid">${rows}</div>
+    <div class="odd-nota">Digite a odd real da Betfair. O cálculo vale <b>pré-jogo</b>. Ao vivo, o WR muda com o tempo.</div></div>`;
+}
+// ES_JS_END
+
+
+
+
+
+let state = {
+  tab: 'pre',
+  filtroMercado: 'TODOS',
+  filtroLiga: 'TODAS',
+  filtroPais: 'TODOS',
+  scoreMin: 0,
+  edgeMin: -100,
+  busca: '',
+  ordem: 'edge',
+  ordemDir: 'desc',
+  hideEvitar: false,
+  hideNegativeEv: false,
+  hideNoH2h: false,
+  jogoSelecionado: null,
+};
+
+try {
+  const saved = localStorage.getItem('allinstreet_state');
+  if (saved) {
+    const s = JSON.parse(saved);
+    state = {...state, ...s, jogoSelecionado: null};
+  }
+} catch (e) {}
+
+function saveState() {
+  try {
+    const {jogoSelecionado, ...toSave} = state;
+    localStorage.setItem('allinstreet_state', JSON.stringify(toSave));
+  } catch (e) {}
+}
+
+function update(patch) { state = {...state, ...patch}; saveState(); render(); }
+function selectJogo(j) { state.jogoSelecionado = j; render(); }
+function closeModal() { state.jogoSelecionado = null; render(); }
+function recarregar() {
+  // Um HTML aberto como arquivo local NÃO consegue reler o banco sozinho.
+  // "Atualizar os dados" = rodar o gerador no Colab e reabrir o HTML.
+  const msg = 'COMO ATUALIZAR OS DADOS\n\n' +
+    'Este dashboard é um arquivo estático — os dados ficam embutidos nele.\n' +
+    'Para trazer os dados mais recentes do banco:\n\n' +
+    '1. No Colab, rode:\n' +
+    '     gd.gerar_dashboard()\n\n' +
+    '2. Baixe o dashboard_allin_street.html atualizado do Drive\n' +
+    '3. Abra o arquivo novo\n\n' +
+    'Dados atuais desta página: ' + (DADOS.geradoEm || '—') + '\n\n' +
+    'Clique OK para recarregar esta página (caso já tenha baixado a versão nova).';
+  if (confirm(msg)) {
+    const btn = document.getElementById('btn-update');
+    if (btn) btn.classList.add('spinning');
+    setTimeout(() => window.location.reload(), 200);
+  }
+}
+
+function contagemMercados() {
+  const c = {};
+  DADOS.jogos.forEach(j => { c[j.recom] = (c[j.recom] || 0) + 1; });
+  c['TODOS'] = DADOS.jogos.length;
+  return c;
+}
+function listaLigas() {
+  const s = new Set();
+  DADOS.jogos.forEach(j => s.add(j.liga));
+  return ['TODAS', ...Array.from(s).sort()];
+}
+function listaPaises() {
+  const s = new Set();
+  DADOS.jogos.forEach(j => s.add(j.pais));
+  return ['TODOS', ...Array.from(s).sort()];
+}
+
+function jogosFiltrados() {
+  let r = [...DADOS.jogos];
+  // EVITAR/MONITORAR nunca aparecem (decisão do usuário)
+  r = r.filter(j => j.recom !== 'EVITAR' && j.recom !== 'MONITORAR');
+  if (state.filtroMercado !== 'TODOS') r = r.filter(j => j.recom === state.filtroMercado);
+  if (state.filtroLiga !== 'TODAS') r = r.filter(j => j.liga === state.filtroLiga);
+  if (state.filtroPais !== 'TODOS') r = r.filter(j => j.pais === state.filtroPais);
+  if (state.busca.trim()) {
+    const q = state.busca.toLowerCase();
+    r = r.filter(j => j.jogo.toLowerCase().includes(q) || j.liga.toLowerCase().includes(q));
+  }
+  if (state.scoreMin > 0) r = r.filter(j => j.scoreRec >= state.scoreMin);
+  if (state.edgeMin > -100) r = r.filter(j => j.edge >= state.edgeMin);
+  if (state.hideNegativeEv) r = r.filter(j => j.ev > 0);
+  if (state.hideNoH2h) r = r.filter(j => j.h2hN >= 3);
+  
+  r.sort((a, b) => {
+    // Edge Score primeiro (ALTA→MÉDIA→BAIXA) como critério mestre
+    const ea = a.edgeScore ? EDGE_ORDEM[a.edgeScore.nivel] : 3;
+    const eb = b.edgeScore ? EDGE_ORDEM[b.edgeScore.nivel] : 3;
+    if (ea !== eb && state.ordem === 'edge') return ea - eb;
+    let va, vb;
+    if (state.ordem === 'score') { va = a.scoreRec; vb = b.scoreRec; }
+    else if (state.ordem === 'edge') { va = a.edge; vb = b.edge; }
+    else if (state.ordem === 'ev') { va = a.ev; vb = b.ev; }
+    else if (state.ordem === 'lambda') { va = a.lambda; vb = b.lambda; }
+    else if (state.ordem === 'kickoff') {
+      va = a.kickoff || '99:99'; vb = b.kickoff || '99:99';
+      const cmp = va.localeCompare(vb);
+      return state.ordemDir === 'desc' ? -cmp : cmp;
+    }
+    else { va = a.scoreRec; vb = b.scoreRec; }
+    return state.ordemDir === 'desc' ? vb - va : va - vb;
+  });
+  return r;
+}
+
+function renderTickerTop5() {
+  const top5 = DADOS.top5 || [];
+  if (!top5.length) {
+    return `<div class="ticker-track">
+      <div class="ticker-item">
+        <span class="ticker-jogo">Sem jogos elegíveis no top 5 — rode novamente</span>
+      </div>
+    </div>`;
+  }
+  const fmt = o => `
+    <div class="ticker-item">
+      <span class="ticker-rank r${o.rank}">${o.rank}º</span>
+      <span class="ticker-jogo">${o.jogo}</span>
+      <span class="ticker-mercado ${o.mercado}">${MERCADO_LABEL[o.mercado] || o.mercado}</span>
+      <span class="ticker-value-lg tk-${o.color}">${o.score}</span>
+      <span class="ticker-extra">justa ${o.oddJusta > 0 ? o.oddJusta.toFixed(2) : '—'}</span>
+      <span class="ticker-extra">⏱ ${o.kickoff}</span>
+    </div>
+  `;
+  const all = [...top5, ...top5, ...top5].map(fmt).join('');
+  return `<div class="ticker-track">${all}</div>`;
+}
+
+function renderCombosOuro() {
+  if (!DADOS.combosOuro || !DADOS.combosOuro.length) {
+    return '<div style="grid-column: 1/-1; padding: 18px; color: var(--ink-muted); font-style: italic; font-family: Fraunces, serif; font-size: 14px;">Nenhum combo OURO ainda — rode a análise V5 com mais histórico</div>';
+  }
+  return DADOS.combosOuro.map(c => `
+    <div class="combo-card">
+      <div class="combo-head">
+        <span class="combo-mercado">${MERCADO_LABEL[c.mercado] || c.mercado}</span>
+        <span class="tag tag-green">+${c.lift}pp</span>
+      </div>
+      <div class="combo-detail">score ${c.score} · λ ${c.lambda} · CS ${c.cs}</div>
+      <div class="combo-stats">
+        <div class="combo-stat">
+          <span class="combo-stat-label">WR</span>
+          <span class="combo-stat-value">${c.wr}%</span>
+        </div>
+        <div class="combo-stat">
+          <span class="combo-stat-label">N</span>
+          <span class="combo-stat-value">${c.n}</span>
+        </div>
+        <div class="combo-stat" style="margin-left: auto;">
+          <span class="combo-stat-label">EV/jogo</span>
+          <span class="combo-stat-value" style="color: #4ADE80;">R$${c.evJogo}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function renderCombosLixo() {
+  if (!DADOS.combosLixo || !DADOS.combosLixo.length) {
+    return '<div style="padding: 14px; color: var(--ink-muted); font-style: italic; font-family: Fraunces, serif; font-size: 14px;">Nenhum combo LIXO identificado.</div>';
+  }
+  return DADOS.combosLixo.map(c => `
+    <div class="combo-card lixo">
+      <div class="combo-head" style="margin-bottom: 6px;">
+        <span class="combo-mercado">${MERCADO_LABEL[c.mercado] || c.mercado}</span>
+        <span class="tag tag-copper">${c.lift}pp</span>
+      </div>
+      <div class="combo-detail">score ${c.score} · WR ${c.wr}% · n=${c.n} · EV R$${c.evJogo}</div>
+    </div>
+  `).join('');
+}
+
+function renderUltimas(str) {
+  return (str || '—————').split('').map(c => {
+    // V/E/D (vitória/empate/derrota) ou O/U (over/under)
+    if (c === 'O' || c === 'V') return `<span class="ultima-cell win">${c}</span>`;
+    if (c === 'U' || c === 'D') return `<span class="ultima-cell loss">${c}</span>`;
+    if (c === 'E') return `<span class="ultima-cell draw">E</span>`;
+    return '<span class="ultima-cell dash">—</span>';
+  }).join('');
+}
+
+function renderMatchCard(j) {
+  // mapa do nível do Edge por mercado (pra colorir os 5 mercados)
+  const edgeByMkt = {};
+  if (j.edgeScore && j.edgeScore.todos) {
+    j.edgeScore.todos.forEach(c => { edgeByMkt[c.mercado] = c; });
+  }
+  const cellMkt = (label, mktKey, scoreVal) => {
+    const c = edgeByMkt[mktKey];
+    const nivel = c ? c.nivel : 'BAIXA';
+    const acion = c && c.acionavel !== false;
+    const edgeTag = mktKey === 'OVER_HT' ? 'live' : (!acion ? '' : nivel.toLowerCase());
+    return `<div class="score-item">
+      <div class="score-item-head">
+        <span class="score-item-label">${label}${edgeTag ? ` <span class="si-edge e-${nivel}">${edgeTag}</span>` : ''}</span>
+        <span class="score-item-value">${scoreVal}</span>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill baredge-${nivel} ${acion?'':'baredge-off'}" style="width: ${scoreVal}%"></div></div>
+    </div>`;
+  };
+  const mvmModelo = j.probCalib;
+  const mvmMercado = j.oddBetfair > 0 ? Math.round((1/j.oddBetfair)*1000)/10 : 0;
+  const tierLabel = j.tier === 'gold' ? 'TIER GOLD' : (j.tier === 'silver' ? 'TIER SILVER' : (j.tier === 'bronze' ? 'TIER BRONZE' : ''));
+  const e = j.edgeScore;
+  const eLvl = (e && e.nivel) ? e.nivel : null;
+
+  return `
+    <article class="match-card tier-${j.tier} ${eLvl ? 'edge-'+eLvl : ''}" data-jogo-id="${j.id}">
+      <div class="grain"></div>
+
+      ${eLvl ? `
+      <div class="edge-banner ${eLvl}">
+        <div class="eb-left">
+          <span class="eb-dot"></span>
+          <span class="eb-tag">EDGE ${eLvl}</span>
+          <span class="eb-mkt">· ${MERCADO_LABEL[e.mercado] || e.mercado}</span>
+        </div>
+        <span class="eb-wr">${e.wr != null ? e.wr+'%' : ''}</span>
+      </div>` : ''}
+
+      ${tierLabel ? `<div class="tier-badge ${j.tier}">${tierLabel}</div>` : ''}
+
+      <div class="match-header">
+        <div class="match-info">
+          <div class="match-meta">
+            <span class="tag tag-dim mono">${j.pais}</span>
+            <span class="tag tag-dim mono">${j.kickoff}</span>
+            <span class="match-meta-liga">${j.liga}</span>
+          </div>
+          <h3 class="match-title">${j.jogo}</h3>
+        </div>
+        <div class="dual-badge">
+          <div class="dual-col modelo">
+            <div class="dual-head">SCORE</div>
+            <div class="dual-val">${j.scoreRec}</div>
+            <div class="dual-mkt">${MERCADO_LABEL[j.recom] || j.recom}</div>
+          </div>
+          <div class="dual-col edge ${eLvl ? 'lvl-'+eLvl : ''}">
+            <div class="dual-head">EDGE</div>
+            <div class="dual-val ${eLvl ? 'lvl-'+eLvl : ''}">${eLvl ? eLvl[0] : '—'}</div>
+            <div class="dual-mkt ${eLvl ? 'lvl-'+eLvl : ''}">${e && e.mercado ? (MERCADO_LABEL[e.mercado]||e.mercado) : '—'}</div>
+          </div>
+        </div>
+      </div>
+
+      ${j.oddJusta > 0 ? `
+      <div class="mvm-section">
+        <span class="mvm-label">Mod×Mer</span>
+        <div class="mvm-bar-container">
+          <div class="mvm-bar modelo" style="width: ${mvmModelo}%; opacity: 0.9;"></div>
+          <div class="mvm-bar mercado" style="width: ${mvmMercado}%; opacity: 0.4; top: 0;"></div>
+        </div>
+        <div class="mvm-stats">
+          <div class="mvm-stat"><span class="mvm-stat-label">Mod</span><span class="mvm-stat-value gold">${mvmModelo}%</span></div>
+          <div class="mvm-stat"><span class="mvm-stat-label">Mer</span><span class="mvm-stat-value">${mvmMercado}%</span></div>
+        </div>
+      </div>` : ''}
+
+      <div class="divider-section">
+        <div class="divider-line"></div>
+        <span class="divider-label">5 mercados · score + edge</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="scores-grid">
+        ${cellMkt('HT-O', 'OVER_HT', j.scoreOver_HT)}
+        ${cellMkt('HT-U', 'UNDER_HT', j.scoreUnder_HT)}
+        ${cellMkt('FT-O', 'OVER_FT', j.scoreOver_FT)}
+        ${cellMkt('FT-U', 'UNDER_FT', j.scoreUnder_FT)}
+        ${cellMkt('U2.5', 'UNDER_25_FT', j.scoreUnder_25)}
+      </div>
+
+      <div class="pre-data">
+        <div class="pre-item">
+          <span class="pre-item-label">λ Partida</span>
+          <span class="pre-item-value">${j.lambda.toFixed(2)}</span>
+        </div>
+        <div class="pre-item">
+          <span class="pre-item-label">H2H média</span>
+          <span class="pre-item-value" style="color: ${j.h2hN < 3 ? 'var(--copper-bright)' : 'var(--ink)'}">
+            ${j.h2hMedia !== null && j.h2hMedia !== undefined ? j.h2hMedia.toFixed(1) : '—'}
+            <span class="sub">(n=${j.h2hN})</span>
+          </span>
+        </div>
+        <div class="pre-item">
+          <span class="pre-item-label">Odd Justa</span>
+          <span class="pre-item-value gold">${j.oddJusta > 0 ? j.oddJusta.toFixed(2) : '—'}</span>
+        </div>
+        <div class="pre-item">
+          <span class="pre-item-label">Edge mkt</span>
+          <span class="pre-item-value ${j.edge > 0 ? 'green' : (j.edge < 0 ? 'copper' : '')}">${j.edge > 0 ? '+' : ''}${j.edge}pp</span>
+        </div>
+      </div>
+
+      <div class="match-footer">
+        <div class="footer-row">
+          <div class="ultimas-block">
+            <span class="ultimas-label">Casa</span>
+            <div class="ultimas-row">${renderUltimas(j.ultimasCasa || j.ultimas)}</div>
+          </div>
+          <div class="ultimas-block">
+            <span class="ultimas-label">Fora</span>
+            <div class="ultimas-row">${renderUltimas(j.ultimasFora || '—————')}</div>
+          </div>
+        </div>
+        <div class="footer-row">
+          <div class="ultimas-block">
+            <span class="ultimas-label">H2H</span>
+            <div class="ultimas-row">${renderUltimas(j.h2hVisual || '—————')}</div>
+          </div>
+          <span class="ev-final ${j.ev > 0 ? 'green' : 'copper'}">EV R$${j.ev > 0 ? '+' : ''}${j.ev}</span>
+        </div>
+      </div>
+      ${edgeSelo(j)}
+    </article>
+  `;
+}
+function renderModal() {
+  const j = state.jogoSelecionado;
+  if (!j) return '';
+  
+  // Cor de cada mercado (mesma paleta dos cards)
+  const COR_MKT = {
+    OVER_HT: '#4ADE80', OVER_FT: '#4FD1C5', UNDER_HT: '#F0CC7E',
+    UNDER_FT: '#E27E50', UNDER_25_FT: '#93B5E1',
+  };
+  const corRec = COR_MKT[j.recom] || 'var(--gold)';
+  
+  const scoresData = [
+    {name: 'O HT', value: j.scoreOver_HT, mkt: 'OVER_HT'},
+    {name: 'U HT', value: j.scoreUnder_HT, mkt: 'UNDER_HT'},
+    {name: 'O FT', value: j.scoreOver_FT, mkt: 'OVER_FT'},
+    {name: 'U FT', value: j.scoreUnder_FT, mkt: 'UNDER_FT'},
+    {name: 'U 2.5', value: j.scoreUnder_25, mkt: 'UNDER_25_FT'},
+  ];
+  const maxScore = Math.max(...scoresData.map(s => s.value), 100);
+  const preData = [
+    ['Lambda (λ)', j.lambda.toFixed(2)],
+    ['Lambda recente', j.lambdaRecente.toFixed(2)],
+    ['H2H média gols', j.h2hMedia !== null ? `${j.h2hMedia.toFixed(1)} (n=${j.h2hN})` : 'sem histórico'],
+    ['CS Casa / Fora', `${j.csCasa}% / ${j.csFora}%`],
+    ['Forma H em casa', j.formaH.toFixed(1)],
+    ['Forma A fora', j.formaA.toFixed(1)],
+    ['% Gols HT / ST', `${j.pctGolsHT}% / ${j.pctGolsST}%`],
+    ['Under 2.5 últ. 5', `${j.under25Pct}%`],
+  ];
+  
+  return `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()" style="border-top: 3px solid ${corRec};">
+        <div class="grain"></div>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M5 5L15 15M15 5L5 15"/>
+          </svg>
+        </button>
+        <div class="modal-content">
+          <div class="modal-meta">
+            <span class="tag tag-dim mono">${j.pais}</span>
+            <span class="tag tag-dim mono">${j.kickoff}</span>
+            <span class="tag tag-dim mono">${j.liga}</span>
+            ${j.tier && j.tier !== 'none' ? `<span class="tag" style="background: ${j.tier === 'gold' ? 'var(--gold)' : (j.tier === 'silver' ? '#8C8C92' : 'var(--copper)')}; color: var(--bg); border: none;">TIER ${j.tier.toUpperCase()}</span>` : ''}
+          </div>
+          <h2 class="modal-title">${j.jogo}</h2>
+          
+          <div class="modal-rec-row" style="background: linear-gradient(135deg, ${corRec}22 0%, transparent 100%); border-color: ${corRec}66;">
+            <div>
+              <div class="modal-rec-label">Recomendação</div>
+              <div class="modal-rec-value" style="color: ${corRec};">
+                <span style="font-family: 'Fraunces', serif; font-weight: 300; margin-right: 8px;">${MERCADO_GLYPH[j.recom] || ''}</span>${MERCADO_LABEL[j.recom]}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div class="modal-rec-label">Score</div>
+              <div class="modal-rec-score" style="color: ${corRec};">${j.scoreRec}</div>
+            </div>
+          </div>
+          
+          ${edgeModal(j)}
+          
+          <div class="modal-section">
+            <div class="modal-section-title">● Entrada Pré-Live</div>
+            <div class="modal-stats-grid">
+              <div class="modal-stat"><span class="modal-stat-label">Prob Calibrada</span><span class="modal-stat-value" style="color: ${corRec};">${j.probCalib}%</span></div>
+              <div class="modal-stat"><span class="modal-stat-label">Odd Justa</span><span class="modal-stat-value gold">${j.oddJusta > 0 ? j.oddJusta.toFixed(2) : '—'}</span></div>
+              <div class="modal-stat"><span class="modal-stat-label">Odd Betfair</span><span class="modal-stat-value">${j.oddBetfair > 0 ? j.oddBetfair.toFixed(2) : '—'}</span></div>
+              <div class="modal-stat">
+                <span class="modal-stat-label">EV R$100</span>
+                <span class="modal-stat-value ${j.ev > 0 ? 'green' : 'copper'}">${j.ev > 0 ? '+' : ''}${j.ev}</span>
+                <span class="modal-stat-sub">Edge ${j.edge > 0 ? '+' : ''}${j.edge}pp</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="modal-section">
+            <div class="modal-section-title">● Scores por Mercado</div>
+            <div class="modal-bars">
+              ${scoresData.map(s => {
+                const cor = COR_MKT[s.mkt];
+                const ehRec = s.mkt === j.recom;
+                return `
+                <div class="modal-bar-item">
+                  <span class="modal-bar-value" style="${ehRec ? `color: ${cor}; font-weight: 700;` : ''}">${s.value}</span>
+                  <div class="modal-bar" style="height: ${(s.value/maxScore)*130}px; background: ${cor}; ${ehRec ? `box-shadow: 0 0 12px ${cor}88;` : 'opacity: 0.55;'}"></div>
+                  <span class="modal-bar-label" style="${ehRec ? `color: ${cor}; font-weight: 700;` : ''}">${s.name}</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+          
+          <div class="modal-section">
+            <div class="modal-section-title">● Sequências recentes</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+              <div>
+                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); font-weight: 600; margin-bottom: 8px;">Casa (últ. 5)</div>
+                <div class="ultimas-row">${renderUltimas(j.ultimasCasa || j.ultimas)}</div>
+              </div>
+              <div>
+                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); font-weight: 600; margin-bottom: 8px;">Fora (últ. 5)</div>
+                <div class="ultimas-row">${renderUltimas(j.ultimasFora || '—————')}</div>
+              </div>
+              <div>
+                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); font-weight: 600; margin-bottom: 8px;">H2H (O/U)</div>
+                <div class="ultimas-row">${renderUltimas(j.h2hVisual || '—————')}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="modal-section">
+            <div class="modal-section-title">● Dados Pré-Jogo Completos</div>
+            <div class="modal-pre-grid">
+              ${preData.map(([k,v]) => `
+                <div class="modal-pre-row">
+                  <span class="modal-pre-key">${k}</span>
+                  <span class="modal-pre-val">${v}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── ANÁLISE CRÍTICA ───
+function renderCritica() {
+  const c = DADOS.critica;
+  if (!c) {
+    return `<div class="empty">Sem dados suficientes ainda. Rode pre_jogo + aguarde jogos terminarem.</div>`;
+  }
+  
+  const insights = (c.insights || []).map(i => {
+    const icon = i.level === 'destaque' ? '✦' : (i.level === 'alerta' ? '!' : 'i');
+    return `<div class="insight ${i.level}">
+      <span class="insight-icon">${icon}</span>
+      <span class="insight-msg">${i.msg}</span>
+    </div>`;
+  }).join('');
+  
+  // Thresholds de break-even por mercado (patamar onde o verde começa)
+  const THRESHOLD_MKT = {OVER_HT: 80, OVER_FT: 80, UNDER_HT: 35, UNDER_FT: 25, UNDER_25_FT: 54};
+  
+  // Odd justa = 1 / probabilidade. Prob 50% → odd 2.00 (igual para qualquer mercado).
+  // A diferença back over vs back under aparece na odd de MERCADO (com margem do book),
+  // não na odd justa, que é sempre 1/prob.
+  function oddDoWR(wr, mercado) {
+    if (!wr || wr <= 0) return null;
+    return 1 / (wr / 100);
+  }
+  
+  // WR por mercado — visão MACRO (cards grandes, dados essenciais)
+  const mercadosOrder = ['OVER_HT', 'OVER_FT', 'UNDER_HT', 'UNDER_FT', 'UNDER_25_FT'];
+  const wrMercadoCards = mercadosOrder.map(mkt => {
+    const d = (c.wr_mercado || {})[mkt];
+    if (!d) return '';
+    const thr = THRESHOLD_MKT[mkt] || 50;
+    const corMkt = {OVER_HT:'#4ADE80',OVER_FT:'#4FD1C5',UNDER_HT:'#F0CC7E',UNDER_FT:'#E27E50',UNDER_25_FT:'#93B5E1'}[mkt];
+    const acimaBE = Math.round(d.wr) >= thr;
+    const oddJustaMkt = oddDoWR(d.wr, mkt);
+    return `
+      <div class="mkt-macro" style="border-left: 3px solid ${corMkt};">
+        <div class="mkt-macro-head">
+          <span class="mkt-macro-name" style="color: ${corMkt};">${MERCADO_LABEL[mkt]}</span>
+        </div>
+        <div class="mkt-macro-body">
+          <div class="mkt-macro-wr">
+            <span class="mkt-macro-wr-val" style="color: ${acimaBE ? '#4ADE80' : 'var(--ink)'}">${d.wr}%</span>
+            <span class="mkt-macro-wr-bar"><span style="width:${d.wr}%; background:${corMkt};"></span></span>
+          </div>
+          <div class="mkt-macro-stats">
+            <div><span class="mm-lbl">Jogos</span><span class="mm-val">${d.n}</span></div>
+            <div><span class="mm-lbl">Acertos</span><span class="mm-val">${d.acertos}</span></div>
+            <div><span class="mm-lbl">Odd justa</span><span class="mm-val" style="color:var(--gold)">${oddJustaMkt ? oddJustaMkt.toFixed(2) : '—'}</span></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  
+  // ── Onde concentrar banca (top combos) ──
+  const concentrarRows = (c.concentrar_banca || []).map((cb, i) => {
+    const corMkt = {OVER_HT:'#4ADE80',OVER_FT:'#4FD1C5',UNDER_HT:'#F0CC7E',UNDER_FT:'#E27E50',UNDER_25_FT:'#93B5E1'}[cb.mercado];
+    return `
+      <div class="cb-row" style="${cb.acima_be ? 'border-left: 3px solid #4ADE80;' : 'border-left: 3px solid var(--copper-soft); opacity: 0.8;'}">
+        <span class="cb-rank">${i+1}</span>
+        <div class="cb-info">
+          <span class="cb-mkt" style="color: ${corMkt};">${MERCADO_LABEL[cb.mercado]}</span>
+          <span class="cb-faixa">score ${cb.faixa}</span>
+        </div>
+        <div class="cb-metrics">
+          <div class="cb-metric"><span class="cb-m-val" style="color:${cb.acima_be ? '#4ADE80' : 'var(--gold)'}">${cb.wr}%</span><span class="cb-m-lbl">WR</span></div>
+          <div class="cb-metric"><span class="cb-m-val">${cb.n}</span><span class="cb-m-lbl">jogos</span></div>
+          <div class="cb-metric"><span class="cb-m-val" style="color:var(--gold)">@${cb.odd_justa}</span><span class="cb-m-lbl">odd justa</span></div>
+        </div>
+      </div>`;
+  }).join('');
+  
+  const faixas = ['50-60', '60-70', '70-80', '80-90', '90-100'];
+  
+  const heatmapHeader = `<div class="heatmap-header-row">
+    ${faixas.map(f => `<span class="heatmap-col-label">${f}</span>`).join('')}
+  </div>`;
+  
+  // Cor do heatmap: NO threshold ou acima → verde (mais forte conforme sobe).
+  // Abaixo do threshold → ouro logo abaixo, descendo até vermelho.
+  // IMPORTANTE: usa o WR arredondado ao inteiro (mesmo que é exibido),
+  // pra cor e número batirem (antes 79.5 exibia "80%" mas pintava de amarelo).
+  function heatColor(wrRaw, thr) {
+    const wr = Math.round(wrRaw);
+    if (wr >= thr) {
+      // verde médio (no threshold) → verde forte (em 100%)
+      const t = (100 - thr) > 0 ? Math.min(1, (wr - thr) / (100 - thr)) : 1;
+      // #6FCB8F (médio) → #2EE86A (forte)
+      const c0 = [111, 203, 143], c1 = [46, 232, 106];
+      const rgb = c0.map((ch, k) => Math.round(ch + (c1[k] - ch) * t));
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    } else {
+      // abaixo: ouro (logo abaixo do thr) → vermelho escuro (em 0)
+      const t = thr > 0 ? wr / thr : 0;  // 0..1, 1 = quase no threshold
+      // #6B2818 (vermelho escuro, t=0) → #B85C38 (cobre) → #D4B062 (ouro, t≈1)
+      const stops = [[0.0,[107,40,24]],[0.5,[184,92,56]],[1.0,[212,176,98]]];
+      let a = stops[0], b = stops[stops.length-1];
+      for (let i=0;i<stops.length-1;i++){ if(t>=stops[i][0]&&t<=stops[i+1][0]){a=stops[i];b=stops[i+1];break;} }
+      const span=b[0]-a[0], lt=span===0?0:(t-a[0])/span;
+      const rgb=a[1].map((ch,k)=>Math.round(ch+(b[1][k]-ch)*lt));
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+  }
+  
+  const heatmapRows = mercadosOrder.map(mkt => {
+    const faixasData = (c.wr_por_faixa || {})[mkt] || {};
+    const thr = THRESHOLD_MKT[mkt] || 50;
+    const cells = faixas.map(f => {
+      const d = faixasData[f] || {wr: 0, n: 0, odd_media: null};
+      if (d.n === 0) return `<div class="heatmap-cell empty">—</div>`;
+      const wr = Math.round(d.wr);
+      const bg = heatColor(wr, thr);
+      const txtColor = wr >= thr ? '#0B0B0D' : (wr >= thr * 0.5 ? '#0B0B0D' : '#ECEAE3');
+      const oddJustaCel = oddDoWR(d.wr, mkt);
+      const oddTxt = oddJustaCel ? oddJustaCel.toFixed(2) : '';
+      return `<div class="heatmap-cell" style="background: ${bg}; color: ${txtColor};" title="${d.acertos}/${d.n} acertos · WR ${d.wr}% · break-even ${thr}% · odd justa @${oddTxt}">
+        <span class="hm-wr">${wr}%</span>
+        ${oddTxt ? `<span class="hm-odd">@${oddTxt}</span>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="heatmap-row">${cells}</div>`;
+  }).join('');
+  
+  const heatmapLabels = mercadosOrder.map(mkt => 
+    `<div class="heatmap-label-row">${MERCADO_LABEL[mkt]} <span style="color: var(--ink-dim); font-size: 10px;">≥${THRESHOLD_MKT[mkt]}%</span></div>`
+  ).join('');
+  
+  // ── Heatmap Lambda × Mercado ──
+  const lambdaFaixas = [
+    {key: 'baixo', label: 'λ <2.0'},
+    {key: 'médio_baixo', label: 'λ 2.0-2.5'},
+    {key: 'médio_alto', label: 'λ 2.5-3.0'},
+    {key: 'alto', label: 'λ ≥3.0'},
+  ];
+  const heatmapLambdaHeader = `<div class="heatmap-header-row" style="grid-template-columns: repeat(4, 1fr);">
+    ${lambdaFaixas.map(f => `<span class="heatmap-col-label">${f.label}</span>`).join('')}
+  </div>`;
+  const heatmapLambdaRows = mercadosOrder.map(mkt => {
+    const linha = (c.wr_lambda_mercado || {})[mkt] || {};
+    const thr = THRESHOLD_MKT[mkt] || 50;
+    const cells = lambdaFaixas.map(f => {
+      const d = linha[f.key] || {wr: 0, n: 0};
+      if (d.n === 0) return `<div class="heatmap-cell empty">—</div>`;
+      const wr = Math.round(d.wr);
+      const bg = heatColor(wr, thr);
+      const txtColor = wr >= thr ? '#0B0B0D' : (wr >= thr * 0.5 ? '#0B0B0D' : '#ECEAE3');
+      const oddCel = oddDoWR(d.wr, mkt);
+      const oddTxt = oddCel ? oddCel.toFixed(2) : '';
+      return `<div class="heatmap-cell" style="background: ${bg}; color: ${txtColor};" title="${d.acertos}/${d.n} acertos · WR ${d.wr}% · odd justa @${oddTxt}">
+        <span class="hm-wr">${wr}%</span>
+        ${oddTxt ? `<span class="hm-odd">@${oddTxt}</span>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="heatmap-row" style="grid-template-columns: repeat(4, 1fr);">${cells}</div>`;
+  }).join('');
+  
+  // Lambda
+  const lambdaRows = Object.entries(c.wr_por_lambda || {}).map(([k, d]) => `<tr>
+    <td>λ ${d.faixa} <span style="color: var(--ink-muted); font-size: 11px;">(${k})</span></td>
+    <td class="num">${d.n}</td>
+    <td class="num">${d.acertos}</td>
+    <td class="num">${d.wr}%<span class="wr-bar"><span class="wr-bar-fill" style="width: ${d.wr}%; background: ${d.wr >= 60 ? '#4ADE80' : (d.wr >= 40 ? 'var(--gold)' : 'var(--copper)')}"></span></span></td>
+  </tr>`).join('');
+  
+  // Dia da semana
+  const diaRows = Object.entries(c.wr_por_dia || {}).filter(([k,d]) => d.n > 0).map(([k, d]) => `<tr>
+    <td>${k}</td>
+    <td class="num">${d.n}</td>
+    <td class="num">${d.acertos}</td>
+    <td class="num">${d.wr}%<span class="wr-bar"><span class="wr-bar-fill" style="width: ${d.wr}%; background: ${d.wr >= 60 ? '#4ADE80' : 'var(--gold)'}"></span></span></td>
+  </tr>`).join('');
+  
+  // Correlações
+  // VISÃO 1 — Filtro geral (variável × acerto da recomendação)
+  const filtroGeralRows = (c.filtro_geral || []).map(f => {
+    const forte = Math.abs(f.spread) >= 8;
+    let leitura, dirColor;
+    if (f.spread > 2) { leitura = `prefira quando ALTO (≥${f.corte_alto})`; dirColor = '#4ADE80'; }
+    else if (f.spread < -2) { leitura = `prefira quando BAIXO (≤${f.corte_baixo})`; dirColor = '#4ADE80'; }
+    else { leitura = 'pouca diferença'; dirColor = 'var(--ink-muted)'; }
+    return `<tr ${forte ? 'style="background: rgba(212,176,98,0.05);"' : ''}>
+      <td><b>${f.var}</b></td>
+      <td class="num">${f.n}</td>
+      <td class="num" style="color: ${f.wr_baixo >= f.wr_alto ? '#4ADE80' : 'var(--ink)'}">${f.wr_baixo}%</td>
+      <td class="num" style="color: ${f.wr_alto > f.wr_baixo ? '#4ADE80' : 'var(--ink)'}">${f.wr_alto}%</td>
+      <td class="num" style="color: var(--gold); font-weight: 700;">${Math.abs(f.spread)}pp</td>
+      <td style="color: ${dirColor}; font-size: 11px;">${leitura}</td>
+    </tr>`;
+  }).join('');
+  
+  const mp = c.melhor_preditor;
+  const melhorPreditorHtml = mp ? `
+    <div style="padding: 16px 18px; background: linear-gradient(135deg, rgba(212,176,98,0.08) 0%, transparent 100%); border: 1px solid var(--border-gold); margin-bottom: 18px;">
+      <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-muted); font-weight: 600; margin-bottom: 8px;">🎯 Melhor filtro pra separar acerto de erro</div>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--ink-soft); line-height: 1.6;">
+        <b style="font-family: 'Fraunces', serif; font-size: 20px; color: var(--gold);">${mp.var}</b><br>
+        Quando ${mp.spread > 0 ? 'ALTO' : 'BAIXO'} você acerta <b style="color:#4ADE80;">${mp.spread > 0 ? mp.wr_alto : mp.wr_baixo}%</b> · 
+        quando ${mp.spread > 0 ? 'BAIXO' : 'ALTO'} cai pra <b style="color:var(--copper-bright);">${mp.spread > 0 ? mp.wr_baixo : mp.wr_alto}%</b>
+        (diferença de <b style="color:var(--gold);">${Math.abs(mp.spread)}pp</b>)
+      </div>
+    </div>` : '';
+  
+  // VISÃO 2 — Preditores por mercado
+  const COR_MKT_PRED = {OVER_HT:'#4ADE80',OVER_FT:'#4FD1C5',UNDER_HT:'#F0CC7E',UNDER_FT:'#E27E50',UNDER_25_FT:'#93B5E1'};
+  const preditoresMercadoHtml = mercadosOrder.map(mkt => {
+    const vars = (c.preditores_mercado || {})[mkt] || [];
+    const cor = COR_MKT_PRED[mkt];
+    if (!vars.length) {
+      return `<div class="pred-mkt">
+        <div class="pred-mkt-name" style="color:${cor};">${MERCADO_LABEL[mkt]}</div>
+        <div style="color: var(--ink-muted); font-style: italic; font-size: 12px;">Sem dados suficientes</div>
+      </div>`;
+    }
+    const linhas = vars.map(v => {
+      const melhorAlto = v.spread > 0;
+      return `<div class="pred-var">
+        <span class="pred-var-name">${v.var}</span>
+        <span class="pred-var-detail">
+          ${melhorAlto ? `alto <b style="color:#4ADE80">${v.wr_alto}%</b> / baixo ${v.wr_baixo}%` 
+                       : `baixo <b style="color:#4ADE80">${v.wr_baixo}%</b> / alto ${v.wr_alto}%`}
+          <span style="color: var(--gold); margin-left: 6px;">+${Math.abs(v.spread)}pp</span>
+        </span>
+      </div>`;
+    }).join('');
+    return `<div class="pred-mkt">
+      <div class="pred-mkt-name" style="color:${cor}; border-bottom: 2px solid ${cor}33;">${MERCADO_LABEL[mkt]}</div>
+      ${linhas}
+    </div>`;
+  }).join('');
+  
+  // Ligas top + pior
+  const ligaRows = (c.wr_liga || []).slice(0, 10).map(l => `<tr>
+    <td>${l.liga}</td>
+    <td class="num">${l.n}</td>
+    <td class="num">${l.acertos}</td>
+    <td class="num">${l.wr}%<span class="wr-bar"><span class="wr-bar-fill" style="width: ${l.wr}%; background: ${l.wr >= 60 ? '#4ADE80' : (l.wr >= 40 ? 'var(--gold)' : 'var(--copper)')}"></span></span></td>
+  </tr>`).join('');
+  
+  const ligasPiorRows = (c.ligas_pior || []).map(l => `<tr>
+    <td>${l.liga}</td>
+    <td class="num">${l.n}</td>
+    <td class="num">${l.acertos}</td>
+    <td class="num" style="color: var(--copper-bright);">${l.wr}%</td>
+  </tr>`).join('');
+  
+  // Erros recentes
+  const errosRows = (c.erros_recentes || []).map(e => `<tr>
+    <td>${e.data}</td>
+    <td class="jogo-cell">${e.jogo}</td>
+    <td>${MERCADO_LABEL[e.recom] || e.recom}</td>
+    <td>${e.score}</td>
+    <td>λ${e.lambda}</td>
+    <td>H2H ${e.h2h_n}</td>
+    <td class="placar-cell">${e.ht_total}/${e.ft_total}</td>
+  </tr>`).join('');
+  
+  // Curva
+  const curva = DADOS.curva || {};
+  const curvaRows = Object.entries(curva).map(([mkt, cv]) => {
+    const pts = Object.entries(cv).map(([s, p]) => `${s}: <strong style="color: var(--ink);">${(p*100).toFixed(1)}%</strong>`).join(' · ');
+    return `<tr><td>${MERCADO_LABEL[mkt] || mkt}</td><td style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${pts}</td></tr>`;
+  }).join('');
+  
+  // Stats globais
+  const evRealizado = c.ev_realizado || 0;
+  const streak = c.streak || {};
+  const streakColor = streak.tipo === 'win' ? '#4ADE80' : 'var(--copper-bright)';
+  const streakLabel = streak.tipo === 'win' ? 'ACERTOS' : (streak.tipo === 'loss' ? 'ERROS' : '—');
+  
+  return `
+    <div class="critica-header-row">
+      <div>
+        <h2 style="font-family: 'Fraunces', serif; font-size: 30px; font-weight: 400; line-height: 1.2; margin-bottom: 4px;">Análise crítica do modelo</h2>
+        <p style="color: var(--ink-soft); font-size: 14px;">Performance histórica · ${c.n_total} jogos terminados em ${c.periodo_dias >= 9999 ? 'todo histórico' : c.periodo_dias + ' dias'}</p>
+      </div>
+      <div class="critica-period-control">
+        <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); font-weight: 600;">Período (dias)</span>
+        <input id="periodo-dias-input" class="critica-period-input" type="number" min="1" max="365" value="${c.periodo_dias >= 9999 ? '' : c.periodo_dias}" placeholder="∞">
+        <button class="critica-period-btn" onclick="aplicarPeriodo()">Aplicar</button>
+        <div class="period-presets">
+          ${[7, 30, 60, 90, 9999].map(d => `
+            <button class="period-preset-btn ${c.periodo_dias === d ? 'active' : ''}" onclick="setPeriodo(${d})">${d === 9999 ? 'Todos' : d+'d'}</button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Stats globais -->
+    <div style="padding: 24px 0; border-bottom: 1px solid var(--border);">
+      <div class="mini-stats-grid">
+        <div class="mini-stat">
+          <span class="mini-stat-label">WR Geral · score ≥ 50</span>
+          <span class="mini-stat-value gold">${c.wr_recom.wr}%</span>
+          <span class="mini-stat-sub">${c.wr_recom.acertos}/${c.wr_recom.n} jogos acionáveis</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">EV Realizado</span>
+          <span class="mini-stat-value ${evRealizado > 0 ? 'green' : 'copper'}">R$${evRealizado > 0 ? '+' : ''}${evRealizado}</span>
+          <span class="mini-stat-sub">acumulado a R$100/jogo</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Sequência atual</span>
+          <span class="mini-stat-value" style="color: ${streakColor};">${streak.n || 0}</span>
+          <span class="mini-stat-sub">${streakLabel}</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Jogos acionáveis</span>
+          <span class="mini-stat-value">${c.n_acionavel}</span>
+          <span class="mini-stat-sub">de ${c.n_total} terminados · ${c.periodo_dias >= 9999 ? 'todo histórico' : c.periodo_dias + ' dias'}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="critica-grid">
+      <div class="critica-card">
+        <div class="critica-title">WR por mercado</div>
+        <div class="critica-subtitle">Visão macro · score ≥ 50 · qual é o seu mercado forte? (detalhe por faixa no heatmap abaixo)</div>
+        <div class="mkt-macro-grid">${wrMercadoCards}</div>
+      </div>
+      
+      <div class="critica-card">
+        <div class="critica-title">Oportunidades combinadas</div>
+        <div class="critica-subtitle">Melhores pontos de entrada — combinações mercado × faixa de score com maior WR (mín. 8 jogos)</div>
+        <div class="cb-list">${concentrarRows || '<div style="color: var(--ink-muted); font-style: italic; padding: 20px;">Sem combinações com volume suficiente ainda.</div>'}</div>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">Heatmap · Mercado × Faixa de Score</div>
+        <div class="critica-subtitle">Verde = WR no break-even daquele mercado ou acima (≥% ao lado do nome) · @ = odd justa do WR real (1/prob) · hover mostra detalhes</div>
+        <div class="heatmap-wrapper">
+          <div class="heatmap-labels-col">${heatmapLabels}</div>
+          <div class="heatmap-cells-area">
+            ${heatmapHeader}
+            ${heatmapRows}
+          </div>
+        </div>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">Heatmap · Mercado × Faixa de Lambda</div>
+        <div class="critica-subtitle">WR de cada mercado conforme os gols esperados (λ) da partida · mesma escala de cor por break-even</div>
+        <div class="heatmap-wrapper" style="grid-template-columns: 130px 1fr;">
+          <div class="heatmap-labels-col">${heatmapLabels}</div>
+          <div class="heatmap-cells-area">
+            ${heatmapLambdaHeader}
+            ${heatmapLambdaRows}
+          </div>
+        </div>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">✦ Insights automáticos</div>
+        <div class="critica-subtitle">Padrões detectados nos dados que podem afetar suas decisões</div>
+        ${insights || '<div style="color: var(--ink-muted); font-style: italic;">Sem insights notáveis ainda.</div>'}
+      </div>
+      
+      <div class="critica-card">
+        <div class="critica-title">WR por faixa de Lambda</div>
+        <div class="critica-subtitle">Performance em diferentes níveis de gols esperados</div>
+        <table class="crit-table">
+          <thead><tr><th>Faixa</th><th>Jogos</th><th>Acertos</th><th>WR</th></tr></thead>
+          <tbody>${lambdaRows}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card">
+        <div class="critica-title">WR por dia da semana</div>
+        <div class="critica-subtitle">Existe um dia em que você acerta mais?</div>
+        <table class="crit-table">
+          <thead><tr><th>Dia</th><th>Jogos</th><th>Acertos</th><th>WR</th></tr></thead>
+          <tbody>${diaRows || '<tr><td colspan="4" style="color: var(--ink-muted); font-style: italic;">Sem dados</td></tr>'}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card">
+        <div class="critica-title">Top 10 ligas (mais ganham)</div>
+        <div class="critica-subtitle">Ordenado por WR · mín 3 jogos</div>
+        <table class="crit-table">
+          <thead><tr><th>Liga</th><th>Jogos</th><th>Acertos</th><th>WR</th></tr></thead>
+          <tbody>${ligaRows || '<tr><td colspan="4" style="color: var(--ink-muted); font-style: italic;">Sem dados</td></tr>'}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card">
+        <div class="critica-title">Ligas a evitar</div>
+        <div class="critica-subtitle">WR abaixo de 50% (com 5+ jogos)</div>
+        <table class="crit-table">
+          <thead><tr><th>Liga</th><th>Jogos</th><th>Acertos</th><th>WR</th></tr></thead>
+          <tbody>${ligasPiorRows || '<tr><td colspan="4" style="color: var(--ink-muted); font-style: italic;">Nenhuma liga problemática.</td></tr>'}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">Top 10 erros recentes</div>
+        <div class="critica-subtitle">Jogos onde o modelo errou — busque padrões</div>
+        <table class="erros-table">
+          <thead><tr><th>Data</th><th>Jogo</th><th>Recomendou</th><th>Score</th><th>λ</th><th>H2H</th><th>Placar HT/FT</th></tr></thead>
+          <tbody>${errosRows || '<tr><td colspan="7" style="color: var(--ink-muted); font-style: italic;">Sem erros recentes.</td></tr>'}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">O que prevê seus acertos — filtro geral</div>
+        <div class="critica-subtitle">Para cada característica do jogo: seu WR quando ela está baixa vs alta. Diferença grande = bom filtro pra escolher ou evitar jogos.</div>
+        ${melhorPreditorHtml}
+        <table class="crit-table">
+          <thead><tr><th>Característica</th><th>Jogos</th><th>WR (valor baixo)</th><th>WR (valor alto)</th><th>Diferença</th><th>Como usar</th></tr></thead>
+          <tbody>${filtroGeralRows || '<tr><td colspan="6" style="color: var(--ink-muted); font-style: italic;">Sem dados</td></tr>'}</tbody>
+        </table>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">O que prevê seus acertos — por mercado</div>
+        <div class="critica-subtitle">Para cada mercado, as características que mais influenciam o acerto. Ex: "Over FT acerta mais quando o λ é alto". Verde = a condição que favorece.</div>
+        <div class="pred-grid">${preditoresMercadoHtml}</div>
+      </div>
+      
+      <div class="critica-card full">
+        <div class="critica-title">Curva calibrada V5.2</div>
+        <div class="critica-subtitle">Probabilidade real observada por faixa de score (sua história salva)</div>
+        ${curvaRows ? `<table class="crit-table"><thead><tr><th>Mercado</th><th>Curva por faixa</th></tr></thead><tbody>${curvaRows}</tbody></table>` 
+          : '<div style="color: var(--ink-muted); font-style: italic;">Sem curva calibrada — rode analise_critica_v5</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderPreJogo() {
+  const c = contagemMercados();
+  const ligas = listaLigas();
+  const paises = listaPaises();
+  const jogos = jogosFiltrados();
+  const mercados = ['TODOS', 'OVER_HT', 'OVER_FT', 'UNDER_HT', 'UNDER_FT', 'UNDER_25_FT'];
+  const pillsHtml = mercados.map(m => `
+    <button class="pill ${state.filtroMercado === m ? 'active' : ''}" data-mercado="${m}">
+      <span>${m === 'TODOS' ? 'Todos' : MERCADO_LABEL[m]}</span>
+      <span class="pill-count">${c[m] || 0}</span>
+    </button>
+  `).join('');
+  
+  return `
+    <section class="filters">
+      <div class="container">
+        <!-- Linha 1: busca + ordenar -->
+        <div class="filters-grid">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="busca" class="search-input" placeholder="Filtrar por time ou liga…" value="${state.busca}">
+          </div>
+          <div class="order-row">
+            <span class="order-label">Ordenar</span>
+            ${['edge','score','ev','lambda','kickoff'].map(o => `
+              <button class="order-btn ${state.ordem===o?'active':''}" data-ordem="${o}">
+                ${o === 'lambda' ? 'λ' : o}
+                ${state.ordem===o ? (state.ordemDir==='desc' ? '↓' : '↑') : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        
+        <!-- Linha 2: mercado pills -->
+        <div class="filters-row">
+          <span class="range-label-block">Mercado</span>
+          ${pillsHtml}
+        </div>
+        
+        <!-- Linha 3: dropdowns liga+país + sliders -->
+        <div class="filters-row" style="gap: 12px;">
+          <span class="range-label-block">Liga</span>
+          <select id="filtro-liga" class="select-pill" style="min-width: 200px;">
+            ${ligas.map(l => `<option value="${l}" ${state.filtroLiga === l ? 'selected' : ''}>${l === 'TODAS' ? 'Todas ligas' : l}</option>`).join('')}
+          </select>
+          
+          <span class="range-label-block" style="margin-left: 12px;">País</span>
+          <select id="filtro-pais" class="select-pill">
+            ${paises.map(p => `<option value="${p}" ${state.filtroPais === p ? 'selected' : ''}>${p === 'TODOS' ? 'Todos países' : p}</option>`).join('')}
+          </select>
+          
+          <span class="count-display"><strong>${jogos.length}</strong> de ${DADOS.jogos.length} jogos</span>
+        </div>
+        
+        <!-- Linha 4: sliders + toggles -->
+        <div class="filters-row" style="gap: 20px;">
+          <div class="range-block">
+            <span class="range-label-block">Score mín</span>
+            <input id="rangeScore" type="range" min="0" max="100" value="${state.scoreMin}" class="range-input">
+            <span class="range-value">${state.scoreMin}</span>
+          </div>
+          <div class="range-block">
+            <span class="range-label-block">Edge mín</span>
+            <input id="rangeEdge" type="range" min="-100" max="100" value="${state.edgeMin}" class="range-input">
+            <span class="range-value">${state.edgeMin}pp</span>
+          </div>
+          
+          <div class="toggles-block" style="margin-left: auto;">
+            <label class="toggle">
+              <input type="checkbox" id="hideNegEv" ${state.hideNegativeEv ? 'checked' : ''}>
+              <span>Só EV+</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="hideNoH2h" ${state.hideNoH2h ? 'checked' : ''}>
+              <span>Só com H2H</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="matches-section">
+      <div class="container">
+        ${jogos.length === 0 
+          ? '<div class="empty">Nenhum jogo corresponde aos filtros.</div>'
+          : `<div class="matches-grid">${jogos.map(renderMatchCard).join('')}</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function aplicarPeriodo() {
+  const input = document.getElementById('periodo-dias-input');
+  if (!input) return;
+  const v = parseInt(input.value);
+  if (isNaN(v) || v < 1) {
+    alert('Digite um número de dias válido (1-365)');
+    return;
+  }
+  // Persiste a escolha pra próxima geração no Colab
+  try { localStorage.setItem('allinstreet_periodo_critica', v); } catch (e) {}
+  alert(`Período salvo: ${v} dias.\n\nPara aplicar, no Colab rode:\n\ngd.gerar_dashboard(dias_critica=${v})\n\nDepois click ATUALIZAR.`);
+}
+function setPeriodo(d) {
+  const input = document.getElementById('periodo-dias-input');
+  if (input) input.value = d >= 9999 ? '' : d;
+  const cmd = d >= 9999 ? 'gd.gerar_dashboard(dias_critica=9999)' : `gd.gerar_dashboard(dias_critica=${d})`;
+  try { localStorage.setItem('allinstreet_periodo_critica', d); } catch (e) {}
+  alert(`Para usar período de ${d >= 9999 ? 'TODO histórico' : d + ' dias'}, no Colab rode:\n\n${cmd}\n\nDepois click ATUALIZAR.`);
+}
+
+
+// BT_JS_START
+const BT_LBL = {OVER_HT:'Over HT',OVER_FT:'Over FT',UNDER_HT:'Under HT',UNDER_FT:'Under FT',UNDER_25_FT:'Under 2.5'};
+const BT_COR = {OVER_HT:'#4ADE80',OVER_FT:'#4FD1C5',UNDER_HT:'#F0CC7E',UNDER_FT:'#E27E50',UNDER_25_FT:'#93B5E1'};
+const BT_ORD = ['OVER_FT','UNDER_25_FT','UNDER_HT','UNDER_FT','OVER_HT'];
+let btSt = { banca: 2000, cenario: 'realista', fVal:false, fSol:false, fAgr:true, fMkt:'', sortCol:'n', sortDir:'desc' };
+const BT_KELLY = {A:1/4,B:1/6,C:1/8,D:'fixo'};
+function btTier(n){ if(n>=200)return'A'; if(n>=100)return'B'; if(n>=60)return'C'; return'D'; }
+function btKelly(p,be){ const odd=100/be,b=odd-1; return Math.max(0,(p*b-(1-p))/b); }
+function btMoeda(v){ if(v>=1e6)return'R$ '+(v/1e6).toFixed(2).replace('.',',')+'M'; if(v>=1e5)return'R$ '+(v/1e3).toFixed(0)+'k'; return 'R$ '+Math.round(v).toLocaleString('pt-BR'); }
+const BT_CEN = {
+  conservador:{degrad:4,vol:0.6,kelly:1/10,label:'Conservador',desc:'WR -4pp, volume -40%, 1/10 Kelly'},
+  realista:{degrad:2,vol:0.7,kelly:1/6,label:'Realista',desc:'WR -2pp, volume -30%, 1/6 Kelly'},
+  otimista:{degrad:0,vol:1.0,kelly:1/4,label:'Otimista',desc:'Backtest puro, 1/4 Kelly (referência)'},
+};
+function btBolsoesApostar(){
+  const B = DADOS.backtest; if(!B) return [];
+  const bols = B.bolsoes.filter(b=>b.solido && b.validado);
+  const porMkt = {};
+  bols.forEach(b=>{ (porMkt[b.mercado]=porMkt[b.mercado]||[]).push(b); });
+  const out = [];
+  for(const mkt in porMkt){
+    const lista = porMkt[mkt].sort((a,b)=>b.n-a.n);
+    const fx = new Set(); let cnt = 0;
+    for(const b of lista){
+      if(cnt>=3) break;
+      const f = b.combo.split('+')[0].trim().replace('score ','');
+      if(fx.has(f)) continue;
+      fx.add(f); out.push(b); cnt++;
+    }
+  }
+  return out;
+}
+function btSimula(banca0,deg,vol,kellyFrac,nSims){
+  const B = DADOS.backtest; if(!B) return null;
+  nSims = nSims||1200; kellyFrac = kellyFrac||(1/6);
+  const bols = btBolsoesApostar();
+  const finais=[], dds=[], mensais=Array.from({length:12},()=>[]);
+  const rnd=Math.random;
+  for(let s=0;s<nSims;s++){
+    let banca=banca0, bMax=banca, maxDD=0;
+    for(let m=0;m<12;m++){
+      const bim=banca;
+      for(const b of bols){
+        const p=Math.max(0.01,(b.wr-deg)/100);
+        const jm=(b.n/B.meta.meses_dados)*vol;
+        const n=Math.max(0,Math.round(jm+(rnd()-0.5)*Math.sqrt(jm)*2));
+        const sp=Math.min(0.05,btKelly(p,b.be)*kellyFrac);
+        const stake=bim*sp, odd=100/b.be;
+        for(let j=0;j<n;j++){ if(rnd()<p)banca+=stake*(odd-1); else banca-=stake; if(banca<0)banca=0; bMax=Math.max(bMax,banca); const dd=bMax>0?(bMax-banca)/bMax:0; maxDD=Math.max(maxDD,dd);}
+      }
+      mensais[m].push(banca);
+    }
+    finais.push(banca); dds.push(maxDD);
+  }
+  finais.sort((a,b)=>a-b); dds.sort((a,b)=>a-b);
+  const P=q=>finais[Math.floor(nSims*q)];
+  return {p25:P(0.25),p50:P(0.5),p75:P(0.75),ddMed:dds.reduce((s,v)=>s+v,0)/dds.length,ddP90:dds[Math.floor(nSims*0.9)],prejPct:finais.filter(f=>f<banca0).length/nSims*100,mensais};
+}
+let _btCache=null;
+function btCalcEV(b){
+  const B=DADOS.backtest, d=BT_CEN.realista;
+  const p=Math.max(0.01,(b.wr-d.degrad)/100);
+  const jm=(b.n/B.meta.meses_dados)*d.vol;
+  const kf=BT_KELLY[btTier(b.n)];
+  const sp=kf==='fixo'?0.01:Math.min(0.05,btKelly(p,b.be)*kf);
+  const stake=btSt.banca*sp, odd=100/b.be;
+  const evA=p*stake*(odd-1)-(1-p)*stake;
+  return {jm,stake,evA,evMes:evA*jm};
+}
+function btHeatColor(wr,thr){
+  if(wr>=thr){ const t=(100-thr)>0?Math.min(1,(wr-thr)/(100-thr)):1; const c0=[111,203,143],c1=[46,232,106]; const r=c0.map((c,k)=>Math.round(c+(c1[k]-c)*t)); return `rgb(${r[0]},${r[1]},${r[2]})`; }
+  const t=thr>0?wr/thr:0; const st=[[0,[107,40,24]],[0.5,[184,92,56]],[1,[212,176,98]]]; let a=st[0],b=st[st.length-1];
+  for(let i=0;i<st.length-1;i++){ if(t>=st[i][0]&&t<=st[i+1][0]){a=st[i];b=st[i+1];break;} }
+  const sp=b[0]-a[0], lt=sp===0?0:(t-a[0])/sp; const r=a[1].map((c,k)=>Math.round(c+(b[1][k]-c)*lt)); return `rgb(${r[0]},${r[1]},${r[2]})`;
+}
+function renderBacktest(){
+  const B = DADOS.backtest;
+  if(!B){ return `<div class="bt-empty"><h3>Sem dados de backtest</h3><p>Rode bt.coletar() e bt.exportar_para_validacao(), depois gd.gerar_dashboard()</p></div>`; }
+  if(!_btCache){ _btCache={}; for(const k of ['conservador','realista','otimista']){ const d=BT_CEN[k]; _btCache[k]=btSimula(btSt.banca,d.degrad,d.vol,d.kelly,1200); } }
+
+  // header stats
+  const head = `<div style="padding:24px 0;border-bottom:1px solid var(--border);"><div class="mini-stats-grid">
+    <div class="mini-stat"><span class="mini-stat-label">Jogos analisados</span><span class="mini-stat-value gold">${B.meta.n_total.toLocaleString('pt-BR')}</span><span class="mini-stat-sub">${B.meta.periodo}</span></div>
+    <div class="mini-stat"><span class="mini-stat-label">Ligas</span><span class="mini-stat-value">${B.meta.n_ligas}</span><span class="mini-stat-sub">${B.meta.temporadas.join(', ')}</span></div>
+    <div class="mini-stat"><span class="mini-stat-label">Bolsões com vantagem</span><span class="mini-stat-value gold">${B.stats.total_bolsoes}</span><span class="mini-stat-sub">${B.stats.solidos_validados} sólidos+validados</span></div>
+    <div class="mini-stat"><span class="mini-stat-label">Atualizado</span><span class="mini-stat-value" style="font-size:18px;">${(DADOS.geradoEm||'').split(' ')[0]}</span><span class="mini-stat-sub">com o dashboard</span></div>
+  </div></div>`;
+
+  // resumo
+  const itens=[];
+  const lucr = BT_ORD.filter(m=>B.mercados[m]&&B.mercados[m].status==='LUCRO');
+  if(lucr.length){ const t=lucr.sort((a,b)=>B.mercados[b].lucro_100-B.mercados[a].lucro_100)[0]; itens.push(`<b>${BT_LBL[t]}</b> é o mercado mais lucrativo: WR ${B.mercados[t].wr}% · R$${B.mercados[t].lucro_100.toFixed(2)} por R$100`); }
+  const bsv=B.bolsoes.filter(b=>b.solido&&b.validado);
+  if(bsv.length){ const t=bsv.sort((a,b)=>b.lucro_100-a.lucro_100)[0]; itens.push(`Melhor bolsão sólido+validado: <b>${BT_LBL[t.mercado]} ${t.combo}</b> — R$${t.lucro_100.toFixed(2)}/R$100 em ${t.n} jogos`); }
+  const bm=[...B.bolsoes].sort((a,b)=>b.n-a.n)[0]; if(bm) itens.push(`Maior volume: <b>${BT_LBL[bm.mercado]} ${bm.combo}</b> (${bm.n} jogos · WR ${bm.wr}%)`);
+  if(B.mercados.OVER_HT&&B.mercados.OVER_HT.status==='LIVE') itens.push(`<b>Over HT é live-only</b>: pré-jogo trava em ${B.mercados.OVER_HT.wr}% (BE 80%)`);
+  itens.push(`<b>Under HT/FT pagam mais por aposta</b> (odds altas) — menos frequência, mais EV`);
+  const resumo = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">01</span><span class="bt-sec-title">Resumo acionável</span><span class="bt-sec-sub">leia primeiro</span></div>
+    <div style="padding:22px 26px;background:var(--bg-card);border:1px solid var(--gold);position:relative;">
+      <div style="font-family:'Fraunces',serif;font-weight:500;font-size:16px;color:var(--gold);margin-bottom:12px;">O que os dados mostram</div>
+      <ul style="list-style:none;padding:0;margin:0;">${itens.map(i=>`<li style="padding:7px 0 7px 20px;position:relative;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);line-height:1.5;"><span style="position:absolute;left:0;color:var(--gold);font-weight:700;">→</span>${i}</li>`).join('')}</ul>
+    </div></div>`;
+
+
+// quebra por mercado: R$/entrada (stake R$100), jogos/mês, R$/mês, no cenário
+function btCenMercados(d){
+  const B = DADOS.backtest; if(!B) return [];
+  const bols = btBolsoesApostar();
+  // Agrupa por mercado. Só conta no R$/entrada os bolsões onde o Kelly > 0
+  // (que seriam apostados). Mercados sem nenhum bolsão Kelly>0 = "não aposta".
+  // Assim a tabela bate com a simulação (que ignora EV negativo via Kelly 0).
+  const porMkt = {};
+  for(const b of bols){
+    const p = Math.max(0.01,(b.wr - d.degrad)/100);
+    const odd = 100/b.be;
+    const rsEntrada = 100*(p*(odd-1) - (1-p));
+    const jm = (b.n/B.meta.meses_dados)*d.vol;
+    const kelly = btKelly(p, b.be);
+    if(!porMkt[b.mercado]) porMkt[b.mercado] = {mercado:b.mercado, somaRsEnt:0, somaJm:0, somaJmApos:0, wrSoma:0, aposta:false};
+    const o = porMkt[b.mercado];
+    o.somaJm += jm;
+    o.wrSoma += (b.wr - d.degrad)*jm;
+    if(kelly > 0){ o.aposta = true; o.somaRsEnt += rsEntrada*jm; o.somaJmApos += jm; }
+  }
+  const out = [];
+  for(const k in porMkt){
+    const o = porMkt[k];
+    const wr = o.somaJm>0 ? o.wrSoma/o.somaJm : 0;
+    const rsEntrada = (o.aposta && o.somaJmApos>0) ? o.somaRsEnt/o.somaJmApos : null;
+    out.push({mercado:k, rsEntrada, jm:o.somaJmApos, rsMes: rsEntrada!=null ? rsEntrada*o.somaJmApos : 0, wr, aposta:o.aposta});
+  }
+  out.sort((a,b)=> (BT_ORD.indexOf(a.mercado)) - (BT_ORD.indexOf(b.mercado)));
+  return out;
+}
+
+  // cenarios
+  const cenHtml = ['conservador','realista','otimista'].map(k=>{
+    const r=_btCache[k], d=BT_CEN[k];
+    const retMes=(Math.pow(r.p50/btSt.banca,1/12)-1)*100;
+    const cor=retMes>0?(k==='otimista'?'gold':'green'):'copper';
+    // métricas por mercado
+    const mkts = btCenMercados(d);
+    const apostados = mkts.filter(m=>m.aposta && m.rsEntrada!=null);
+    const rsEntGeral = apostados.length ? apostados.reduce((s,m)=>s+m.rsEntrada*m.jm,0)/Math.max(1,apostados.reduce((s,m)=>s+m.jm,0)) : 0;
+    const lucroTotalMes = apostados.reduce((s,m)=>s+m.rsMes,0);   // soma do lucro de todos os mercados (stake R$100)
+    const jogosTotalMes = apostados.reduce((s,m)=>s+m.jm,0);
+    const mktRows = mkts.map(m=>{
+      if(!m.aposta || m.rsEntrada==null){
+        return `<tr class="nao-aposta">
+          <td style="color:${BT_COR[m.mercado]};font-weight:600;">${BT_LBL[m.mercado]}</td>
+          <td class="r">${m.wr.toFixed(0)}%</td>
+          <td class="r dim" colspan="3">não aposta (sem vantagem neste cenário)</td>
+        </tr>`;
+      }
+      return `<tr>
+      <td style="color:${BT_COR[m.mercado]};font-weight:600;">${BT_LBL[m.mercado]}</td>
+      <td class="r">${m.wr.toFixed(0)}%</td>
+      <td class="r ${m.rsEntrada>=0?'green':'copper'}">${m.rsEntrada>=0?'+':''}${m.rsEntrada.toFixed(2)}</td>
+      <td class="r dim">${m.jm.toFixed(1)}</td>
+      <td class="r ${m.rsMes>=0?'green':'copper'}">${m.rsMes>=0?'+':''}${m.rsMes.toFixed(0)}</td>
+    </tr>`;
+    }).join('');
+    return `<div class="bt-cen ${k==='realista'?'real':''}"><div class="bt-cen-lbl">${d.label}</div>
+      <div class="bt-cen-val ${cor}">${retMes>=0?'+':''}${retMes.toFixed(1)}<span style="font-size:22px;">%</span></div>
+      <div class="bt-cen-unit">/ mês · mediana</div>
+      <div class="bt-cen-rsent">R$/entrada média (stake R$100): <b class="${rsEntGeral>=0?'green':'copper'}">${rsEntGeral>=0?'+':''}R$${rsEntGeral.toFixed(2)}</b></div>
+      <div class="bt-cen-total">Lucro total/mês (stake R$100): <b class="${lucroTotalMes>=0?'green':'copper'}">${lucroTotalMes>=0?'+':''}R$${lucroTotalMes.toFixed(0)}</b> <span class="bt-cen-total-sub">em ~${jogosTotalMes.toFixed(0)} apostas/mês</span></div>
+      <div class="bt-cen-det">Banca em 12 meses: <b>${btMoeda(r.p50)}</b><br>Faixa provável: ${btMoeda(r.p25)} a ${btMoeda(r.p75)}<br>Drawdown médio: <b>${(r.ddMed*100).toFixed(0)}%</b> · pior: ${(r.ddP90*100).toFixed(0)}%<br>Risco de prejuízo: <b>${r.prejPct.toFixed(1)}%</b><br><span style="color:var(--ink-dim);font-size:10px;">${d.desc}</span></div>
+      <table class="bt-cen-mkt"><thead><tr><th>mercado</th><th class="r">WR</th><th class="r">R$/ent</th><th class="r">j/mês</th><th class="r">R$/mês</th></tr></thead><tbody>${mktRows}</tbody></table>
+      </div>`;
+  }).join('');
+  const cenarios = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">02</span><span class="bt-sec-title">Projeção de retorno em 12 meses</span><span class="bt-sec-sub">monte carlo · 1.200 simulações</span></div>
+    <div class="bt-cenarios">${cenHtml}</div>
+    <div class="bt-note"><b>Como ler:</b> usa Kelly fracionário por tier e compounding mensal. O <b>Realista</b> é a referência. O Otimista assume o backtest perfeito — não use como meta. Drawdown de 20-40% no ano é normal. Comece com stake menor e valide 2-3 meses antes de escalar.</div></div>`;
+
+  // stake
+  const bolsApostar = btBolsoesApostar().sort((a,b)=>btCalcEV(b).evMes-btCalcEV(a).evMes);
+  const stakeRows = bolsApostar.map(b=>{ const ev=btCalcEV(b),t=btTier(b.n);
+    return `<tr><td><span class="tier-bg ${t}">${t}</span></td><td><b style="color:${BT_COR[b.mercado]};">${BT_LBL[b.mercado]}</b> <span class="dim">${b.combo}</span></td><td class="r dim">${ev.jm.toFixed(1)}</td><td class="r">${b.wr.toFixed(1)}%</td><td class="r gold">${(100/b.be).toFixed(2)}</td><td class="r">R$ ${ev.stake.toFixed(2)}</td><td class="r ${ev.evA>0?'green':'copper'}">R$ ${ev.evA>=0?'+':''}${ev.evA.toFixed(2)}</td><td class="r ${ev.evMes>0?'green':'copper'}">R$ ${ev.evMes>=0?'+':''}${ev.evMes.toFixed(2)}</td></tr>`;
+  }).join('');
+  const stake = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">03</span><span class="bt-sec-title">Stake recomendado por bolsão</span><span class="bt-sec-sub">kelly fracionário</span></div>
+    <div class="bt-banca"><span class="bt-banca-lbl">Sua banca</span><input type="range" min="500" max="20000" step="100" value="${btSt.banca}" class="bt-banca-in" id="btBanca"><span class="bt-banca-val" id="btBancaV">${btMoeda(btSt.banca)}</span></div>
+    <table class="bt-tbl"><thead><tr><th>Tier</th><th>Bolsão</th><th class="r">Jogos/mês</th><th class="r">WR</th><th class="r">Odd</th><th class="r">Stake</th><th class="r">EV/aposta</th><th class="r">EV mensal</th></tr></thead><tbody>${stakeRows||'<tr><td colspan="8" class="dim" style="text-align:center;padding:30px;">Sem bolsões sólidos+validados ainda</td></tr>'}</tbody></table></div>`;
+
+  // bolsoes (filtrável)
+  let lst = B.bolsoes.slice();
+  if(btSt.fVal) lst=lst.filter(b=>b.validado);
+  if(btSt.fSol) lst=lst.filter(b=>b.solido);
+  if(btSt.fAgr) lst=lst.filter(b=>b.agrega===null||b.agrega===undefined||b.agrega>=3);
+  if(btSt.fMkt) lst=lst.filter(b=>b.mercado===btSt.fMkt);
+  lst.sort((a,b)=>{ let av=a[btSt.sortCol],bv=b[btSt.sortCol]; if(av==null)av=-1e9; if(bv==null)bv=-1e9; if(typeof av==='string')return btSt.sortDir==='asc'?av.localeCompare(bv):bv.localeCompare(av); return btSt.sortDir==='asc'?av-bv:bv-av; });
+  const bolsRows = lst.map(b=>{ const cor=BT_COR[b.mercado]||'#888'; const tipo=b.solido&&b.validado?'SOLIDO':(b.validado?'validado':(b.solido?'promissor':'pista')); const tl=tipo==='SOLIDO'?'sólido+val':tipo;
+    let ag='(base)',ac='var(--ink-dim)'; if(b.agrega!=null){ if(b.agrega>=3){ag='+'+b.agrega.toFixed(0)+'pp';ac='#4ADE80';}else if(b.agrega<=-1){ag=b.agrega.toFixed(0)+'pp';ac='var(--copper-bright)';}else{ag='≈';ac='var(--ink-muted)';} }
+    const lc=b.lucro_100>=0?'green':'copper';
+    return `<tr><td><span class="bt-mkt-tag" style="background:${cor};">${BT_LBL[b.mercado]}</span></td><td>${b.combo}</td><td class="r">${b.n}</td><td class="r"><b>${b.wr.toFixed(1)}%</b></td><td class="r dim">${b.ic_baixo.toFixed(0)}–${b.ic_alto.toFixed(0)}</td><td class="r ${lc}">R$ ${b.lucro_100>=0?'+':''}${b.lucro_100.toFixed(2)}</td><td class="r" style="color:${ac};font-weight:600;">${ag}</td><td><span class="bt-tipo ${tipo}">${tl}</span></td></tr>`;
+  }).join('');
+  const bolsoes = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">04</span><span class="bt-sec-title">Todos os bolsões com vantagem</span><span class="bt-sec-sub">filtre e ordene</span></div>
+    <div class="bt-filtros">
+      <label class="bt-chk"><input type="checkbox" id="btFVal" ${btSt.fVal?'checked':''}> só validados</label>
+      <label class="bt-chk"><input type="checkbox" id="btFSol" ${btSt.fSol?'checked':''}> só sólidos</label>
+      <label class="bt-chk"><input type="checkbox" id="btFAgr" ${btSt.fAgr?'checked':''}> só quando agrega</label>
+      <select class="bt-sel" id="btFMkt"><option value="">Todos mercados</option>${BT_ORD.map(m=>`<option value="${m}" ${btSt.fMkt===m?'selected':''}>${BT_LBL[m]}</option>`).join('')}</select>
+      
+    </div>
+    <table class="bt-tbl"><thead><tr><th data-bsort="mercado">Mercado</th><th data-bsort="combo">Combinação</th><th class="r" data-bsort="n">Jogos</th><th class="r" data-bsort="wr">WR</th><th class="r">IC 95%</th><th class="r" data-bsort="lucro_100">Lucro/R$100</th><th class="r" data-bsort="agrega">Agrega</th><th>Tipo</th></tr></thead><tbody>${bolsRows||'<tr><td colspan="8" class="dim" style="text-align:center;padding:30px;">Nenhum bolsão com esses filtros</td></tr>'}</tbody></table></div>`;
+
+  // ligas
+  let ligaHead=`<th>Liga</th><th>Jogos</th>`; BT_ORD.forEach(m=>{ if(B.mercados[m]) ligaHead+=`<th>${BT_LBL[m]}<br><small style="color:var(--ink-dim);font-size:8px;">BE ${B.mercados[m].be}%</small></th>`; });
+  const ligasOrd=[...B.ligas].sort((a,b)=>b.n_total-a.n_total);
+  const ligaRows=ligasOrd.map(row=>{ let c=`<td>${row.liga}</td><td>${row.n_total}</td>`; BT_ORD.forEach(m=>{ if(!B.mercados[m])return; const cc=row.cells[m]; if(!cc){c+=`<td class="bt-liga-no">—</td>`;}else{const cls=cc.acima?'bt-liga-ok':'bt-liga-no'; const mg=cc.acima?`<small>${cc.n}j · +${cc.margem.toFixed(0)}pp</small>`:`<small>${cc.n}j</small>`; c+=`<td class="${cls}">${cc.wr.toFixed(0)}%${mg}</td>`;} }); return `<tr>${c}</tr>`; }).join('');
+  const ligas = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">05</span><span class="bt-sec-title">WR por liga × mercado</span><span class="bt-sec-sub">verde = lucrativo na liga</span></div>
+    <table class="bt-ligatbl"><thead><tr>${ligaHead}</tr></thead><tbody>${ligaRows}</tbody></table></div>`;
+
+  // heatmap
+  const faixas=['50-59','60-69','70-79','80-89','90-100'], bandas=['L<=2.0','L 2.0-2.5','L 2.5-3.0','L>=3.0'];
+  let heatHtml='';
+  for(const mkt of BT_ORD){ const m=B.mercados[mkt]; if(!m)continue;
+    heatHtml+=`<div style="margin-bottom:24px;"><div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;"><span style="font-family:'Fraunces',serif;font-weight:500;font-size:16px;color:${BT_COR[mkt]};">${BT_LBL[mkt]}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-dim);letter-spacing:0.16em;">BREAK-EVEN ${m.be}% · ODD ${m.odd.toFixed(2)}</span></div>
+      <div style="display:grid;grid-template-columns:90px repeat(${bandas.length},1fr);gap:1px;background:var(--border);padding:1px;"><div style="background:var(--bg);"></div>`;
+    bandas.forEach(b=>{heatHtml+=`<div style="background:var(--bg);padding:7px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-muted);letter-spacing:0.1em;">${b}</div>`;});
+    for(const f of faixas){ heatHtml+=`<div style="background:var(--bg);padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);display:flex;align-items:center;">score ${f}</div>`;
+      for(const b of bandas){ const cell=B.heatmap.find(h=>h.mercado===mkt&&h.faixa===f&&h.banda===b);
+        if(!cell){heatHtml+=`<div style="background:var(--bg);color:var(--ink-dim);display:flex;align-items:center;justify-content:center;">—</div>`;}
+        else{ const bg=btHeatColor(cell.wr,m.be); const fg=cell.acima?'#0B0B0D':(cell.wr>=m.be*0.5?'#0B0B0D':'#ECEAE3'); heatHtml+=`<div class="bt-heat-cell" style="background:${bg};color:${fg};" title="${cell.n} jogos · WR ${cell.wr}% · R$${cell.lucro}/R$100"><span class="w">${cell.wr.toFixed(0)}%</span><span class="m">${cell.n}j · R$${cell.lucro>=0?'+':''}${cell.lucro.toFixed(0)}</span></div>`; }
+      }
+    }
+    heatHtml+=`</div></div>`;
+  }
+  const heatmap = `<div class="bt-sec"><div class="bt-sec-head"><span class="bt-sec-num">06</span><span class="bt-sec-title">Heatmap · faixa de score × banda λ</span><span class="bt-sec-sub">onde está o ouro</span></div>${heatHtml}</div>`;
+
+  return `<div style="padding-top:20px;">${head}${resumo}${cenarios}${stake}${bolsoes}${ligas}${heatmap}</div>`;
+}
+function btAttach(){
+  const bb=document.getElementById('btBanca');
+  if(bb) bb.addEventListener('input',e=>{ btSt.banca=Number(e.target.value); _btCache=null; document.getElementById('btBancaV').textContent=btMoeda(btSt.banca); render(); });
+  const mk=(id,key)=>{ const el=document.getElementById(id); if(el)el.addEventListener('change',e=>{ btSt[key]=e.target.checked!==undefined&&el.type==='checkbox'?e.target.checked:e.target.value; render(); }); };
+  mk('btFVal','fVal'); mk('btFSol','fSol'); mk('btFAgr','fAgr');
+  const fm=document.getElementById('btFMkt'); if(fm)fm.addEventListener('change',e=>{ btSt.fMkt=e.target.value; render(); });
+  document.querySelectorAll('[data-bsort]').forEach(th=>{ th.addEventListener('click',()=>{ const c=th.dataset.bsort; if(btSt.sortCol===c)btSt.sortDir=btSt.sortDir==='asc'?'desc':'asc'; else{btSt.sortCol=c;btSt.sortDir='desc';} render(); }); });
+}
+// BT_JS_END
+
+function render() {
+  const totalPre = DADOS.jogos.length;
+  const totalCritica = DADOS.critica ? DADOS.critica.n_total : 0;
+  const btCount = DADOS.backtest ? DADOS.backtest.stats.total_bolsoes : 0;
+  
+  const html = `
+    <header class="header">
+      <div class="grain"></div>
+      <div class="container">
+        <div class="header-inner">
+          <div class="header-left">
+            <div class="header-meta">
+              <div class="header-bar"></div>
+              <span class="header-issue">Trading Desk · Edição ${DADOS.geradoEm.split(' ')[0] || 'diária'}</span>
+            </div>
+            <h1 class="header-title">All In <em>Street</em></h1>
+            <p class="header-subtitle">${totalPre} partidas pré · ${totalCritica} jogos no histórico · Modelo V7 + V5.2</p>
+          </div>
+          <div class="header-right">
+            <button id="btn-update" class="header-update-btn" onclick="recarregar()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Atualizar
+            </button>
+            <div class="header-update-info">
+              <span class="header-update-label">Última atualização</span>
+              <span class="header-update-value">${DADOS.geradoEm}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ticker">
+        ${renderTickerTop5()}
+      </div>
+    </header>
+    
+    <nav class="tabs-bar">
+      <div class="container tabs-inner">
+        <button class="tab ${state.tab === 'pre' ? 'active' : ''}" data-tab="pre">
+          Pré-jogo <span class="tab-count">${totalPre}</span>
+        </button>
+        <button class="tab ${state.tab === 'critica' ? 'active' : ''}" data-tab="critica">
+          Análise crítica <span class="tab-count">${totalCritica}</span>
+        </button>
+        <button class="tab ${state.tab === 'backtest' ? 'active' : ''}" data-tab="backtest">
+          Backtest <span class="tab-count">${btCount}</span>
+        </button>
+      </div>
+    </nav>
+    
+    <div class="tab-pane ${state.tab === 'pre' ? 'active' : ''}">${state.tab === 'pre' ? renderPreJogo() : ''}</div>
+    <div class="tab-pane ${state.tab === 'critica' ? 'active' : ''}">
+      <div class="container">${state.tab === 'critica' ? renderCritica() : ''}</div>
+    </div>
+    <div class="tab-pane ${state.tab === 'backtest' ? 'active' : ''}">
+      <div class="container">${state.tab === 'backtest' ? renderBacktest() : ''}</div>
+    </div>
+    
+    <footer class="footer container">
+      <div>
+        <p class="footer-quote">"O mercado paga melhor onde sua certeza é maior — e onde a certeza dos outros é menor."</p>
+        <p class="footer-sub">All In Street · Modelo V7 · Curva V5.2 · ${totalCritica} jogos avaliados</p>
+      </div>
+      <div class="footer-right">
+        <div class="footer-name">All In Street</div>
+        <div class="footer-desk">Personal trading desk</div>
+      </div>
+    </footer>
+    
+    ${renderModal()}
+  `;
+  
+  document.getElementById('app').innerHTML = html;
+  attachListeners();
+}
+
+function attachListeners() {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => update({tab: t.dataset.tab}));
+  });
+
+  if (state.tab === 'backtest') { btAttach(); return; }
+  
+  if (state.tab === 'pre') {
+    const busca = document.getElementById('busca');
+    if (busca) busca.addEventListener('input', e => update({busca: e.target.value}));
+    
+    const rs = document.getElementById('rangeScore');
+    if (rs) rs.addEventListener('input', e => update({scoreMin: Number(e.target.value)}));
+    
+    const re = document.getElementById('rangeEdge');
+    if (re) re.addEventListener('input', e => update({edgeMin: Number(e.target.value)}));
+    
+    const hn = document.getElementById('hideNegEv');
+    if (hn) hn.addEventListener('change', e => update({hideNegativeEv: e.target.checked}));
+    
+    const hh = document.getElementById('hideNoH2h');
+    if (hh) hh.addEventListener('change', e => update({hideNoH2h: e.target.checked}));
+    
+    const fl = document.getElementById('filtro-liga');
+    if (fl) fl.addEventListener('change', e => update({filtroLiga: e.target.value}));
+    
+    const fp = document.getElementById('filtro-pais');
+    if (fp) fp.addEventListener('change', e => update({filtroPais: e.target.value}));
+    
+    document.querySelectorAll('.pill[data-mercado]').forEach(p => {
+      p.addEventListener('click', () => update({filtroMercado: p.dataset.mercado}));
+    });
+    document.querySelectorAll('.order-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        if (state.ordem === b.dataset.ordem) {
+          update({ordemDir: state.ordemDir === 'desc' ? 'asc' : 'desc'});
+        } else {
+          update({ordem: b.dataset.ordem, ordemDir: 'desc'});
+        }
+      });
+    });
+    document.querySelectorAll('.match-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = Number(card.dataset.jogoId);
+        const j = DADOS.jogos.find(j => j.id === id);
+        if (j) selectJogo(j);
+      });
+    });
+  }
+}
+
+window.closeModal = closeModal;
+window.recarregar = recarregar;
+window.aplicarPeriodo = aplicarPeriodo;
+window.setPeriodo = setPeriodo;
+
+render();
+</script>
+</body>
+</html>
