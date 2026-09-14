@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>All In Street · Como ler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0B0D;--card:#14141A;--ink:#ECEAE3;--soft:#B4B0A6;--muted:#7A7872;
+--dim:#4A4845;--gold:#D4B062;--gold-bright:#F0CC7E;--green:#4ADE80;--copper:#E27E50;
+--border:#2A2A30;--teal:#4FD1C5;--blue:#93B5E1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter Tight',sans-serif;
+font-size:15px;line-height:1.55;padding:32px 20px 80px}
+.wrap{max-width:760px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:8px}
+h1{font-family:'Fraunces',serif;font-weight:300;font-size:40px;letter-spacing:-0.02em;line-height:1}
+h1 em{font-style:italic;color:var(--gold);font-weight:400}
+.back{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);
+text-decoration:none;border:1px solid var(--border);padding:8px 14px;white-space:nowrap}
+.back:hover{border-color:var(--gold)}
+.intro{color:var(--soft);font-size:16px;margin:22px 0 8px;line-height:1.6}
+.intro b{color:var(--ink)}
+
+.sec{margin-top:34px}
+.sec-h{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sec-h span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.22em;
+text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+.sec-h::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.item{padding:14px 0;border-bottom:1px solid var(--border);display:grid;
+grid-template-columns:160px 1fr;gap:16px}
+.item:last-child{border-bottom:none}
+@media(max-width:560px){.item{grid-template-columns:1fr;gap:5px}}
+.item-k{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--gold);font-size:14px}
+.item-v{color:var(--soft);font-size:14.5px}
+.item-v b{color:var(--ink);font-weight:600}
+.g{color:var(--green);font-weight:600} .r{color:var(--copper);font-weight:600}
+
+.mkt-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.mkt-row{display:flex;align-items:baseline;gap:12px;font-size:14.5px}
+.mkt-tag{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;
+padding:3px 9px;white-space:nowrap;min-width:92px;text-align:center}
+.t-oht{color:var(--green);background:rgba(74,222,128,0.12)}
+.t-uht{color:var(--gold);background:rgba(212,176,98,0.12)}
+.t-oft{color:var(--teal);background:rgba(79,209,197,0.12)}
+.t-uft{color:var(--copper);background:rgba(226,126,80,0.12)}
+.t-u25{color:var(--blue);background:rgba(147,181,225,0.12)}
+.mkt-row span:last-child{color:var(--soft)}
+
+.gold-box{margin-top:34px;padding:22px 24px;
+background:linear-gradient(135deg,rgba(212,176,98,0.08),transparent);
+border:1px solid rgba(212,176,98,0.3);border-left:3px solid var(--gold)}
+.gold-box h3{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--gold-bright);margin-bottom:10px}
+.gold-box p{color:var(--soft);font-size:15px;line-height:1.6}
+.gold-box b{color:var(--ink)}
+.foot{margin-top:40px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Como <em>ler</em></h1>
+    <a class="back" href="./">← voltar aos jogos</a>
+  </div>
+
+  <p class="intro">Uma lista dos jogos do dia com uma leitura de <b>gols</b> de cada partida. Não é palpite de quem ganha — é sobre <b>sair ou não sair gol</b>, no 1º tempo e no jogo todo. Cada card é um jogo.</p>
+
+  <div class="sec">
+    <div class="sec-h"><span>o topo do card</span></div>
+    <div class="item"><div class="item-k">WOLF ALERT<br>/ SIGNAL / CALL</div><div class="item-v">O grau de confiança do sinal, do mais forte pro mais fraco: <b>ALERT</b> (forte), <b>SIGNAL</b> (médio), <b>CALL</b> (fraco). Do lado, a <b>% verde</b> é a taxa de acerto histórica — de quantas vezes jogos parecidos acertaram esse mercado no passado. Quanto maior, mais confiável.</div></div>
+    <div class="item"><div class="item-k">SCORE<br>(0 a 100)</div><div class="item-v">A nota do modelo pra aquele jogo. Serve pra <b>ordenar</b> os jogos, do mais forte pro mais fraco. Score alto = o modelo gostou. <b>Não é probabilidade</b> — pra chance real, olhe a % verde.</div></div>
+    <div class="item"><div class="item-k">WOLF (A/S/C)</div><div class="item-v">Só a inicial do grau do alerta: <b>A</b>lert, <b>S</b>ignal, <b>C</b>all.</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span>os 5 mercados</span></div>
+    <p class="item-v" style="margin-bottom:14px">Cada jogo é avaliado em 5 apostas de gol, cada uma com sua nota:</p>
+    <div class="mkt-list">
+      <div class="mkt-row"><span class="mkt-tag t-oht">OVER HT</span><span><b style="color:var(--ink)">SAI</b> gol no 1º tempo</span></div>
+      <div class="mkt-row"><span class="mkt-tag t-uht">UNDER HT</span><span><b style="color:var(--ink)">NÃO sai</b> gol no 1º tempo</span></div>
+      <div class="mkt-row"><span class="mkt-tag t-oft">OVER FT</span><span><b style="color:var(--ink)">SAI</b> gol no jogo (pelo menos 1)</span></div>
+      <div class="mkt-row"><span class="mkt-tag t-uft">UNDER FT</span><span><b style="color:var(--ink)">NÃO sai</b> gol no 2º tempo</span></div>
+      <div class="mkt-row"><span class="mkt-tag t-u25">UNDER 2.5</span><span>o jogo termina com <b style="color:var(--ink)">no máximo 2 gols</b></span></div>
+    </div>
+    <p class="item-v" style="margin-top:16px">A barra embaixo de cada um mostra a <b>força</b> daquele mercado no jogo — verde é forte. A etiqueta <b>ALTA</b> marca o destaque do jogo.</p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span>a linha do meio</span></div>
+    <div class="item"><div class="item-k">λ PARTIDA</div><div class="item-v">(lê-se "lambda") Quantos gols o modelo espera no jogo todo. É o <b>coração de tudo</b>. Baixo (~2.0) = jogo travado, tende a Under. Alto (~3.0) = jogo aberto, tende a Over.</div></div>
+    <div class="item"><div class="item-k">H2H MÉDIA</div><div class="item-v">Média de gols nos últimos confrontos entre os dois times. <b>Atenção ao (n=1)</b>: se o n é baixo, são poucos jogos e vale pouco.</div></div>
+    <div class="item"><div class="item-k">ODD JUSTA</div><div class="item-v">A odd que o mercado <b>deveria</b> pagar, pela conta do modelo, no mercado recomendado. É a sua referência.</div></div>
+    <div class="item"><div class="item-k">ODD BETFAIR</div><div class="item-v">A odd <b>real</b> da Betfair, capturada na hora da análise. <span class="g">Verde</span> = a Betfair paga <b>mais</b> que a justa → pode ter valor. <span class="r">Vermelho</span> = paga <b>menos</b> → o mercado já precificou, evite.</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><span>o rodapé</span></div>
+    <div class="item"><div class="item-k">CASA / FORA</div><div class="item-v">Os últimos 5 jogos de cada time. <b>O</b> = saiu 3+ gols · <b>U</b> = saiu 2 ou menos. As cores só ajudam a bater o olho no padrão.</div></div>
+    <div class="item"><div class="item-k">H2H</div><div class="item-v">A mesma régua (O / U), mas nos confrontos diretos entre os dois times.</div></div>
+    <div class="item"><div class="item-k">EV R$</div><div class="item-v">Quanto se espera ganhar ou perder a cada <b>R$100</b>, já descontando a comissão. <span class="g">Positivo</span> = aposta com valor. <span class="r">Negativo</span> = o modelo diz pra não entrar.</div></div>
+  </div>
+
+  <div class="gold-box">
+    <h3>A regra de ouro</h3>
+    <p>Score alto <b>não</b> é sinal de entrada sozinho. A entrada só vale quando a <b>Odd Betfair está verde</b> (paga mais que a justa) <b>e</b> o EV é positivo. Um jogo pode ter score 90 e ainda assim ser "não entre", se a Betfair já estiver pagando pouco.</p>
+  </div>
+
+  <div class="foot">All In Street · atualizado com o dashboard</div>
+</div>
+</body>
+</html>
